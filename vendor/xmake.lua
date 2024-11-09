@@ -7,3 +7,13 @@ target("ImGui")
     add_files("**.cpp")
     add_syslinks("user32", "gdi32", "shell32", "d3d11", "dxgi")
 target_end()
+
+target("Math")
+    set_group("ext")
+    set_default(false)
+    add_includedirs(".")
+    set_kind("static")
+    add_headerfiles("**.h")
+    add_files("**.cpp")
+target_end()
+
