@@ -10,5 +10,6 @@ int main(int argc, char* args[])
 {
     Spar::Application app;
     app.Init();
+    app.Run();
     return 0;
 }

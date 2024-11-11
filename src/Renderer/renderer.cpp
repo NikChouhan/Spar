@@ -22,13 +22,13 @@ void Spar::Graphics::Renderer::InitWindow()
 			screenSurface = SDL_GetWindowSurface(window);
 
 			//Fill the surface white
-			SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format, 130, 255, 0));
+			SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format, 255, 255, 255));
 
 			//Update the surface
 			SDL_UpdateWindowSurface(window);
 
 			//Hack to get window to stay up
-			SDL_Event e; bool quit = false; while (quit == false) { while (SDL_PollEvent(&e)) { if (e.type == SDL_QUIT) quit = true; } }
+			//SDL_Event e; bool quit = false; while (quit == false) { while (SDL_PollEvent(&e)) { if (e.type == SDL_QUIT) quit = true; } }
 		}
 	}
 }
@@ -213,7 +213,6 @@ void Spar::Graphics::Renderer::SetViewPort()
 
 	m_immediateContext->RSSetViewports(1, &vp);
 }
-
 
 
 float Spar::Graphics::Renderer::AspectRatio() const
