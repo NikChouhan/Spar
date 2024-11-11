@@ -11,6 +11,9 @@
 #include <DirectXColors.h>
 #include "Timer.h"
 #include <d3dcompiler.h>
+#include <SDL.h>
+#include <SDL_syswm.h>
+
 
 namespace SM = DirectX::SimpleMath;
 namespace wrl = Microsoft::WRL;

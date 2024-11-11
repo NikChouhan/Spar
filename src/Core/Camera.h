@@ -1,7 +1,7 @@
 #pragma once
 #include "WinUtil.h"
 
-namespace cravillac::graphics
+namespace Spar::Graphics
 {
 	class Camera
 	{
