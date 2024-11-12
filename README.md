@@ -14,8 +14,12 @@ xmake run
 
 # Todo
 
-- [ ] Integrate ImGui to play with shaders/lights/textures/maps implemented subsequently
-- [ ] Texture, materials, lighting maps loading, depth stencil buffers config
+- [x] Integrate ImGui to play with shaders/lights/textures/maps implemented subsequently
+- [x] Textures
+- [ ] Normal maps
+- [x] Diffuse Maps
+- [ ] Emmision and specular maps
+- [ ] Materials
 - [ ] Lights 
     - [ ] Point lights
     - [ ] Directional Lights
