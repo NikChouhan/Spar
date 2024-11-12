@@ -8,7 +8,7 @@ Spar::Application::Application()
 
 Spar::Application::~Application()
 {
-	//relese recources here
+    ShutDown();
 }
 
 void Spar::Application::Init()
@@ -16,8 +16,8 @@ void Spar::Application::Init()
 	m_renderer->InitWindow();
 	m_renderer->InitD3D11();
 
-    m_renderer->m_camera->InitAsPerspective(90, m_renderer->m_width, m_renderer->m_height);
-    m_renderer->m_camera->SetPosition({ 0.0f, 0.0f, -5.0f });
+    m_camera->InitAsPerspective(90, m_renderer->m_width, m_renderer->m_height);
+    m_camera->SetPosition({ 0.0f, 0.0f, -2.8f });
 
     ID3DBlob* pVSBlob = nullptr;
     CompileShader(L"../../../../assets/shaders/VS_shader.hlsl", "VSMain", "vs_4_0", &pVSBlob);
@@ -116,7 +116,7 @@ void Spar::Application::Init()
     };
 
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(UINT) * 36;
+    bd.ByteWidth = sizeof(UINT32) * 36;
     bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
     bd.CPUAccessFlags = 0;
     InitData.pSysMem = indices;
@@ -127,15 +127,15 @@ void Spar::Application::Init()
 
     m_renderer->m_immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(CBNeverChanges);
-    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    bd.CPUAccessFlags = 0;
-    HR(m_renderer->m_device->CreateBuffer(&bd, nullptr, &m_CBNeverChanges), L"never changes buffer init");
-    bd.ByteWidth = sizeof(CBChangesOnResize);
-    HR(m_renderer->m_device->CreateBuffer(&bd, nullptr, &m_CBChangesOnResize), L"on resize changes buffer init");
-    bd.ByteWidth = sizeof(CBChangesEveryFrame);
-    HR(m_renderer->m_device->CreateBuffer(&bd, nullptr, &m_CBChangesEveryFrame), L" every frame changes buffer init");
+    //bd.Usage = D3D11_USAGE_DEFAULT;
+    //bd.ByteWidth = sizeof(CBNeverChanges);
+    //bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    //bd.CPUAccessFlags = 0;
+    //HR(m_renderer->m_device->CreateBuffer(&bd, nullptr, &m_CBNeverChanges), L"never changes buffer init");
+    //bd.ByteWidth = sizeof(CBChangesOnResize);
+    //HR(m_renderer->m_device->CreateBuffer(&bd, nullptr, &m_CBChangesOnResize), L"on resize changes buffer init");
+    //bd.ByteWidth = sizeof(CBChangesEveryFrame);
+    //HR(m_renderer->m_device->CreateBuffer(&bd, nullptr, &m_CBChangesEveryFrame), L" every frame changes buffer init");
 
     // 3. Make sure m_constantBuffer is initialized
     bd.Usage = D3D11_USAGE_DEFAULT;
@@ -164,18 +164,8 @@ void Spar::Application::Init()
 
     // Initialize the view matrix
 
-    m_view = m_renderer->m_camera->GetViewMatrix().Transpose();
+    m_view = m_camera->GetViewMatrix().Transpose();
 
-    CBNeverChanges cbNeverChanges;
-    cbNeverChanges.mView = XMMatrixTranspose(m_view);
-    m_renderer->m_immediateContext->UpdateSubresource(m_CBNeverChanges.Get(), 0, nullptr, &cbNeverChanges, 0, 0);
-
-    // Initialize the projection matrix
-    m_projection = m_renderer->m_camera->GetProjectionMatrix().Transpose();
-
-    CBChangesOnResize cbChangesOnResize;
-    cbChangesOnResize.mProjection = XMMatrixTranspose(m_projection);
-    m_renderer->m_immediateContext->UpdateSubresource(m_CBChangesOnResize.Get(), 0, nullptr, &cbChangesOnResize, 0, 0);
 
     D3D11_RASTERIZER_DESC rasterDesc = {};
     rasterDesc.FillMode = D3D11_FILL_SOLID;
@@ -215,6 +205,29 @@ void Spar::Application::Run()
     }
 }
 
+void Spar::Application::Update(float dt)
+{
+    static float angle = 0.0f;
+    angle += dt;
+
+    m_world = DirectX::XMMatrixRotationY(angle);
+
+    m_meshColor.x = (sinf(angle * 1.0f) + 1.0f) * 0.5f;
+    m_meshColor.y = (sinf(angle * 3.0f) + 1.0f) * 0.5f;
+    m_meshColor.z = (sinf(angle * 5.0f) + 1.0f) * 0.5f;
+    m_meshColor.w = 1.0f;
+
+    ConstantBuffer cb = {
+        .mWorld = SM::Matrix::CreateRotationY(DirectX::XMScalarCos(angle)) * SM::Matrix::CreateRotationZ(DirectX::XMScalarSin(angle)),
+        .mView = m_camera->GetViewMatrix().Transpose(),
+        .mProjection = m_camera->GetProjectionMatrix().Transpose(),
+        .vMeshColor = m_meshColor
+    };
+
+    m_renderer->m_immediateContext->UpdateSubresource(m_constantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+    m_world = DirectX::XMMatrixRotationY(angle);
+}
+
 void Spar::Application::Render()
 {
 
@@ -242,16 +255,17 @@ void Spar::Application::Render()
     m_renderer->m_immediateContext->VSSetShader(m_renderer->m_vertexShader.Get(), nullptr, 0);
 
     // set the constant buffers
-    m_renderer->m_immediateContext->VSSetConstantBuffers(0, 1, m_CBNeverChanges.GetAddressOf());
-    m_renderer->m_immediateContext->VSSetConstantBuffers(1, 1, m_CBChangesEveryFrame.GetAddressOf());
-    m_renderer->m_immediateContext->VSSetConstantBuffers(2, 1, m_CBChangesOnResize.GetAddressOf());
+    m_renderer->m_immediateContext->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
 
     m_renderer->m_immediateContext->PSSetShader(m_renderer->m_pixelShader.Get(), nullptr, 0);
 
-    m_renderer->m_immediateContext->VSSetConstantBuffers(1, 1, m_CBChangesEveryFrame.GetAddressOf());
     m_renderer->m_immediateContext->PSSetShaderResources(0, 1, m_textureView.GetAddressOf());
     m_renderer->m_immediateContext->PSSetSamplers(0, 1, m_samplerLinear.GetAddressOf());
 
+    // Verify buffer bindings
+    ID3D11Buffer* vertexBuffers[] = { m_renderer->m_vertexBuffer.Get() };
+    m_renderer->m_immediateContext->IASetVertexBuffers(0, 1, vertexBuffers, &stride, &offset);
+    m_renderer->m_immediateContext->IASetIndexBuffer(m_renderer->m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 
 
     //draw the Cube
@@ -260,27 +274,9 @@ void Spar::Application::Render()
     HR((m_renderer->m_SwapChain->Present(0, 0)), L"Failed to draw scene");
 }
 
-void Spar::Application::Update(float dt)
-{
-    static float angle = 0.0f;
-    angle += dt;
-
-    m_world = DirectX::XMMatrixRotationY(angle);
-
-    m_meshColor.x = (sinf(angle * 1.0f) + 1.0f) * 0.5f;
-    m_meshColor.y = (sinf(angle * 3.0f) + 1.0f) * 0.5f;
-    m_meshColor.z = (sinf(angle * 5.0f) + 1.0f) * 0.5f;
-
-    CBChangesEveryFrame cbEF;
-
-    cbEF.mWorld = DirectX::XMMatrixTranspose(m_world);
-    cbEF.vMeshColor = m_meshColor;
-
-    m_renderer->m_immediateContext->UpdateSubresource(m_CBChangesEveryFrame.Get(), 0, nullptr, &cbEF, 0, 0);
-}
-
 void Spar::Application::Resize()
 {
+
 }
 
 void Spar::Application::ShutDown()

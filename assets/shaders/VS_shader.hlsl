@@ -1,18 +1,12 @@
-cbuffer CBCNeverChanges : register(b1)
-{
-     matrix mView;
-}
-
-cbuffer CBCChangeOnResize : register(b2)
-{
-    matrix mProjection;
-}  
-
-cbuffer CBCChangeEveryFrame : register(b3)
+cbuffer ConstantBuffer : register(b0)
 {
     matrix mWorld;
+    matrix mView;
+    matrix mProjection;
     float4 vMeshColor;
-}
+}; 
+
+
 struct VS_INPUT
 {
     float4 Pos : POSITION;
@@ -23,8 +17,7 @@ struct VS_OUTPUT
 {
     float4 Pos : SV_POSITION;
     float2 Tex : TEXCOORD0;
-
-    float4 COLOR: vmeshColor;
+    float4 COLOR: COLOR0;
 };
 
 VS_OUTPUT VSMain( VS_INPUT input )

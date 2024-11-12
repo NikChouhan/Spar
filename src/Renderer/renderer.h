@@ -33,8 +33,8 @@ namespace Spar::Graphics
 		//The surface contained by the window
 		SDL_Surface* screenSurface = NULL;
 	public:
-		UINT m_width = 640;
-		UINT m_height = 480;
+		UINT m_width = 1000;
+		UINT m_height = 600;
 
 		wrl::ComPtr<ID3D11Device> m_device;
 		wrl::ComPtr<ID3D11DeviceContext> m_immediateContext;
@@ -48,8 +48,6 @@ namespace Spar::Graphics
 		wrl::ComPtr<ID3D11DepthStencilState> m_depthStencilState;
 
 		D3D11_VIEWPORT mScreenViewport;
-
-		 std::unique_ptr<Graphics::Camera> m_camera = std::make_unique<Graphics::Camera>();
 
 		wrl::ComPtr<ID3D11VertexShader> m_vertexShader = nullptr;
 		wrl::ComPtr<ID3D11PixelShader> m_pixelShader = nullptr;

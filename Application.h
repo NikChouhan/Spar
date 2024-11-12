@@ -31,11 +31,10 @@ namespace Spar
 		//public member variables
 
 		std::unique_ptr<Graphics::Renderer> m_renderer = std::make_unique<Graphics::Renderer>();
+		std::unique_ptr<Graphics::Camera> m_camera = std::make_unique<Graphics::Camera>();
+
 
 	private:
-		wrl::ComPtr<ID3D11Buffer> m_CBNeverChanges = nullptr;
-		wrl::ComPtr<ID3D11Buffer> m_CBChangesOnResize = nullptr;
-		wrl::ComPtr<ID3D11Buffer> m_CBChangesEveryFrame = nullptr;
 		wrl::ComPtr<ID3D11ShaderResourceView> m_textureView = nullptr;
 		wrl::ComPtr<ID3D11SamplerState> m_samplerLinear = nullptr;
 
