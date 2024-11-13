@@ -34,7 +34,9 @@ namespace Spar
 		std::shared_ptr<Graphics::Renderer> m_renderer = std::make_shared<Graphics::Renderer>();
 		std::shared_ptr<Graphics::Camera> m_camera = std::make_shared<Graphics::Camera>();
 
-		std::vector<Model> models;
+		Model textureCube = {};
+
+		std::vector<Model> models{};
 
 	private:
 		wrl::ComPtr<ID3D11ShaderResourceView> m_textureView = nullptr;

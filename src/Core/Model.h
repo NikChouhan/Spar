@@ -4,6 +4,7 @@
 #include "WinUtil.h"
 #include "renderer.h"
 #include "DDSTextureLoader.h"
+#include "Buffer.h"
 
 
 namespace Spar
@@ -11,25 +12,17 @@ namespace Spar
     class Model
     {
     public:
-        Model()
-        {
-            m_model = nullptr;
-        }
-        ~Model()
-        {
-            if (m_model)
-            {
-                cgltf_free(m_model);
-            }
-        }
-
+        Model();
+        ~Model();
         HRESULT LoadModel(const char* path);
-        HRESULT LoadTexture(std::shared_ptr<Graphics::Renderer> renderer, wrl::ComPtr<ID3D11ShaderResourceView> m_textureView, const WCHAR* path);
+        HRESULT LoadTexture(std::shared_ptr<Spar::Graphics::Renderer> renderer, wrl::ComPtr<ID3D11ShaderResourceView> m_textureView, const WCHAR* path);
 
-    private:
+    //private:
         cgltf_data* m_model;
         std::shared_ptr<Spar::Graphics::Renderer> renderer;
         wrl::ComPtr<ID3D11ShaderResourceView> m_textureView = nullptr;
 
+        DrawableAssets assets{};
+        
     };
 }

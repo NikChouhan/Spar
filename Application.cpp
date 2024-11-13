@@ -13,8 +13,7 @@ Spar::Application::~Application()
 
 void Spar::Application::Init()
 {
-	m_renderer->InitWindow();
-	m_renderer->InitD3D11();
+    m_renderer->Init();
 
     m_camera->InitAsPerspective(90, m_renderer->m_width, m_renderer->m_height);
     m_camera->SetPosition({ 0.0f, 0.0f, -2.8f });
@@ -69,11 +68,16 @@ void Spar::Application::Init()
     D3D11_SUBRESOURCE_DATA InitData = {};
     InitData.pSysMem = vertices;
 
-    HR(m_renderer->m_device->CreateBuffer(&bd, &InitData, m_renderer->m_vertexBuffer.GetAddressOf()), L"Failed to create Vertex buffer");
+    m_renderer->m_device->CreateBuffer(&bd, &InitData, textureCube.assets.vertexBuffer.GetAddressOf());
 
-    UINT stride = sizeof(SimpleVertex);
-    UINT offset = 0;
-    m_renderer->m_context->IASetVertexBuffers(0, 1, m_renderer->m_vertexBuffer.GetAddressOf(), &stride, &offset);
+    VertexBuffer vb;
+    IndexBuffer ib;
+
+    vb.Stride = sizeof(SimpleVertex);
+    vb.Offset = 0;
+    m_renderer->m_context->IASetVertexBuffers(0, 1, vb.Buffer.GetAddressOf(), &vb.Stride, &vb.Offset);
+
+    textureCube.assets.vertexBuffer = vb.Buffer;
 
     // Create index buffer
     // Create vertex buffer
@@ -104,53 +108,32 @@ void Spar::Application::Init()
     bd.CPUAccessFlags = 0;
     InitData.pSysMem = indices;
 
-    HR(m_renderer->m_device->CreateBuffer(&bd, &InitData, m_renderer->m_indexBuffer.GetAddressOf()), L"Failed to create Index Buffer");
+    
 
-    m_renderer->m_context->IASetIndexBuffer(m_renderer->m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+    m_renderer->m_device->CreateBuffer(&bd, &InitData, ib.Buffer.GetAddressOf());
+
+    m_renderer->m_context->IASetIndexBuffer(ib.Buffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+
+    textureCube.assets.indexBuffer = ib.Buffer;
 
     m_renderer->m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    // Make sure m_constantBuffer is initialized
-    bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(ConstantBuffer);
-    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    bd.CPUAccessFlags = 0;
-    HR(m_renderer->m_device->CreateBuffer(&bd, nullptr, &m_constantBuffer), L"Failed to create constant buffer");
 
-    //load the texture
+    //load the model
 
     const WCHAR* texturePath = L"../../../../assets/textures/seafloor.dds";
+    textureCube.LoadTexture(m_renderer, textureCube.m_textureView, texturePath);
 
-    Model model;
-    model.LoadTexture(m_renderer, m_textureView,texturePath);
+    /*const char* path = "../../../../assets/models/sponza";
+    HRESULT hr = textureCube.LoadModel(path);*/
 
-    // Create the sample state
-    D3D11_SAMPLER_DESC sampDesc = {};
-    sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-    sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-    sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-    sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-    sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-    sampDesc.MinLOD = 0;
-    sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
-    HR(m_renderer->m_device->CreateSamplerState(&sampDesc, &m_samplerLinear), L"Failed to create texture sampler");
 
-    m_world = XMMatrixIdentity();
+    m_world = DirectX::XMMatrixIdentity();
 
     // Initialize the view matrix
 
     m_view = m_camera->GetViewMatrix().Transpose();
-
-
-    D3D11_RASTERIZER_DESC rasterDesc = {};
-    rasterDesc.FillMode = D3D11_FILL_SOLID;
-    rasterDesc.CullMode = D3D11_CULL_BACK;
-    rasterDesc.FrontCounterClockwise = false;
-    rasterDesc.DepthClipEnable = true;
-
-    // Create the rasterizer state object
-    HR(m_renderer->m_device->CreateRasterizerState(&rasterDesc, m_renderer->m_rasterState.GetAddressOf()), L"Failed to create rasterizer state");
 }
 
 void Spar::Application::Run()
@@ -208,10 +191,13 @@ void Spar::Application::Render()
 {
     m_renderer->Clear();
 
-    for (const auto& model : models)
+    models.push_back(textureCube);
+    
+    for (auto& model : models)
     {
-        models
+        m_renderer->Submit(model);
     }
+    
 }
 
 void Spar::Application::Resize()

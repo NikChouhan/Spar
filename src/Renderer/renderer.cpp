@@ -6,44 +6,51 @@ void Spar::Graphics::Renderer::Init()
 	void InitD3D11();	
 }
 
-void Spar::Graphics::Renderer::Submit(std::vector<RenderCommand> commands)
+void Spar::Graphics::Renderer::Submit(Model model)
 {
-	for (const auto& cmd : commands)
-	{
-		m_context->OMSetDepthStencilState(m_depthStencilState.Get(), 1);
 
-		auto rtv = m_RenderTargetView.Get();
-		m_context->OMSetRenderTargets(1, &rtv, m_depthStencilView.Get());
+	m_context->OMSetDepthStencilState(m_depthStencilState.Get(), 1);
 
-
-		// Render a Cube
-		UINT stride = sizeof(SimpleVertex);
-		UINT offset = 0;
-		m_context->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), &stride, &offset);
-		m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		m_context->IASetInputLayout(m_vertexLayout.Get());
-		m_context->RSSetState(m_rasterState.Get());
-
-		// Set the shaders
-		m_context->VSSetShader(m_vertexShader.Get(), nullptr, 0);
-
-		// set the constant buffers
-		m_context->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
-
-		m_context->PSSetShader(m_pixelShader.Get(), nullptr, 0);
-
-		m_context->PSSetShaderResources(0, 1, cmd.textureView.GetAddressOf());
-		m_context->PSSetSamplers(0, 1, cmd.samplerState.GetAddressOf());
-
-		// Verify buffer bindings
-		ID3D11Buffer* vertexBuffers[] = { m_vertexBuffer.Get() };
-		m_context->IASetVertexBuffers(0, 1, vertexBuffers, &stride, &offset);
-		m_context->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+	auto rtv = m_RenderTargetView.Get();
+	m_context->OMSetRenderTargets(1, &rtv, m_depthStencilView.Get());
 
 
-		//draw the Cube
-		m_context->DrawIndexed(36, 0, 0);
-	}
+	// Render a Cube
+	UINT stride = sizeof(SimpleVertex);
+	UINT offset = 0;
+	m_context->IASetVertexBuffers(0, 1, model.assets.vertexBuffer.GetAddressOf(), &stride, &offset);
+	m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	m_context->IASetInputLayout(m_vertexLayout.Get());
+	m_context->RSSetState(m_rasterState.Get());
+
+	// Set the shaders
+	m_context->VSSetShader(m_vertexShader.Get(), nullptr, 0);
+
+	// set the constant buffers
+	m_context->VSSetConstantBuffers(0, 1, model.assets.constantBuffer.GetAddressOf());
+
+	m_context->PSSetShader(m_pixelShader.Get(), nullptr, 0);
+
+	m_context->PSSetShaderResources(0, 1, model.assets.textureView.GetAddressOf());
+	m_context->PSSetSamplers(0, 1, model.assets.samplerState.GetAddressOf());
+
+	// Verify buffer bindings
+	ID3D11Buffer* vertexBuffers[] = { model.assets.vertexBuffer.Get() };
+	m_context->IASetVertexBuffers(0, 1, vertexBuffers, &stride, &offset);
+	m_context->IASetIndexBuffer(model.assets.indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+
+	D3D11_RASTERIZER_DESC rasterDesc = {};
+	rasterDesc.FillMode = D3D11_FILL_SOLID;
+	rasterDesc.CullMode = D3D11_CULL_BACK;
+	rasterDesc.FrontCounterClockwise = false;
+	rasterDesc.DepthClipEnable = true;
+
+	// Create the rasterizer state object
+	m_device->CreateRasterizerState(&rasterDesc, m_rasterState.GetAddressOf());
+
+
+	//draw the Cube
+	m_context->DrawIndexed(36, 0, 0);
 }
 
 void Spar::Graphics::Renderer::Clear()
@@ -57,7 +64,7 @@ void Spar::Graphics::Renderer::Clear()
 
 }
 
-void Spar::Graphics::Renderer::Present()
+void Spar::Graphics::Renderer::Present() const
 {
 	m_SwapChain->Present(1, 0);
 }
@@ -143,7 +150,7 @@ void Spar::Graphics::Renderer::CreateSwapChain()
 	sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 	sd.Windowed = TRUE;
 
-	SDL_SysWMinfo wmInfo;
+	SDL_SysWMinfo wmInfo = {};
 	SDL_VERSION(&wmInfo.version);
 	SDL_GetWindowWMInfo(window, &wmInfo);
 	HWND hwnd = wmInfo.info.win.window;
@@ -264,9 +271,9 @@ void Spar::Graphics::Renderer::CreateDepthStencilView()
 
 }
 
-void Spar::Graphics::Renderer::SetViewPort()
+void Spar::Graphics::Renderer::SetViewPort() const
 {
-	D3D11_VIEWPORT vp;
+	D3D11_VIEWPORT vp = {};
 
 	vp.TopLeftX = 0.f;
 	vp.TopLeftY = 0.f;

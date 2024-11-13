@@ -2,6 +2,18 @@
 
 namespace Spar
 {
+    Model::Model()
+    {
+        m_model = nullptr;
+    }
+    Model::~Model()
+    {
+        if (m_model)
+        {
+            cgltf_free(m_model);
+        }
+    }
+
     HRESULT Model::LoadModel(const char* path)
     {
         if (!path)

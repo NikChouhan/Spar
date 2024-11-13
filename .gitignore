@@ -7,3 +7,5 @@ build/
 
 vsxmake2022/
 
+# Visual Studio Code
+.vscode/

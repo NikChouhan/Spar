@@ -5,6 +5,7 @@
 #include <string>
 #include <sstream>
 #include "Buffer.h"
+#include "Model.h"
 
 namespace Spar::Graphics
 {
@@ -12,9 +13,9 @@ namespace Spar::Graphics
 	{
 	public:
 		void Init();
-		void Submit(std::vector<RenderCommand> cmd);
+		void Submit(Model model);
 		void Clear();
-		void Present();
+		void Present() const;
 	private:
 
 		void InitD3D11();
@@ -24,7 +25,7 @@ namespace Spar::Graphics
 		void CreateSwapChain();
 		void CreateRenderTargetView();
 		void CreateDepthStencilView();
-		void SetViewPort();
+		void SetViewPort() const;
 		float AspectRatio()const;
 
 	public:
@@ -34,9 +35,9 @@ namespace Spar::Graphics
 		UINT m_width = 1000;
 		UINT m_height = 600;
 
-		std::vector<RenderCommand> commands;
+		//std::vector<DrawableAssets> assets;
 
-	private:
+	//private:
 		UINT createDeviceFlags = 0;
 		D3D_FEATURE_LEVEL m_featureLevel;
 
@@ -59,11 +60,6 @@ namespace Spar::Graphics
 		wrl::ComPtr<ID3D11VertexShader> m_vertexShader = nullptr;
 		wrl::ComPtr<ID3D11PixelShader> m_pixelShader = nullptr;
 		wrl::ComPtr<ID3D11InputLayout> m_vertexLayout = nullptr;
-		wrl::ComPtr<ID3D11Buffer> m_vertexBuffer = nullptr;
 		wrl::ComPtr<ID3D11RasterizerState> m_rasterState = nullptr;
-
-		wrl::ComPtr<ID3D11Buffer> m_indexBuffer = nullptr;
-		wrl::ComPtr<ID3D11Buffer> m_constantBuffer = nullptr;
-
 	};
 }
