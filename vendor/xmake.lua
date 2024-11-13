@@ -26,3 +26,12 @@ target("cgltf")
     add_files("cgltf/**.c")
 target_end()
 
+target("stb")
+    set_group("ext")
+    set_default(false)
+    add_includedirs(".")
+    set_kind("static")
+    add_headerfiles("stb/**.h")
+    add_files("stb/**.cpp")
+target_end()
+
