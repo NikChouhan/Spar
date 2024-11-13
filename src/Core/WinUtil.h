@@ -13,6 +13,7 @@
 #include <d3dcompiler.h>
 #include <SDL.h>
 #include <SDL_syswm.h>
+#include <memory>
 
 
 namespace SM = DirectX::SimpleMath;

@@ -16,18 +16,11 @@ struct SimpleVertex
     DirectX::XMFLOAT2 Tex;
 };
 
-struct CBNeverChanges
+struct RenderCommand
 {
-    DirectX::XMMATRIX mView;
-};
-
-struct CBChangesOnResize
-{
-    DirectX::XMMATRIX mProjection;
-};
-
-struct CBChangesEveryFrame
-{
-    DirectX::XMMATRIX mWorld;
-    DirectX::XMFLOAT4 vMeshColor;
+    wrl::ComPtr<ID3D11Buffer> vertexBuffer;
+    wrl::ComPtr<ID3D11Buffer> indexBuffer;
+    wrl::ComPtr<ID3D11ShaderResourceView> textureView;
+    wrl::ComPtr<ID3D11SamplerState> samplerState;
+    UINT indexCount;
 };

@@ -8,6 +8,7 @@
 #include "DDSTextureLoader.h"
 #include "Shader.h"
 #include "Buffer.h"
+#include "Model.h"
 
 namespace Spar
 {
@@ -30,9 +31,10 @@ namespace Spar
 	public:
 		//public member variables
 
-		std::unique_ptr<Graphics::Renderer> m_renderer = std::make_unique<Graphics::Renderer>();
-		std::unique_ptr<Graphics::Camera> m_camera = std::make_unique<Graphics::Camera>();
+		std::shared_ptr<Graphics::Renderer> m_renderer = std::make_shared<Graphics::Renderer>();
+		std::shared_ptr<Graphics::Camera> m_camera = std::make_shared<Graphics::Camera>();
 
+		std::vector<Model> models;
 
 	private:
 		wrl::ComPtr<ID3D11ShaderResourceView> m_textureView = nullptr;

@@ -19,29 +19,12 @@ void Spar::Application::Init()
     m_camera->InitAsPerspective(90, m_renderer->m_width, m_renderer->m_height);
     m_camera->SetPosition({ 0.0f, 0.0f, -2.8f });
 
-    ID3DBlob* pVSBlob = nullptr;
-    CompileShader(L"../../../../assets/shaders/VS_shader.hlsl", "VSMain", "vs_4_0", &pVSBlob);
+    //shader stuff
+    Shader shader;
+    const WCHAR* vsShaderPath = L"../../../../assets/shaders/VS_shader.hlsl";
+    const WCHAR* psshaderPath = L"../../../../assets/shaders/PS_shader.hlsl";
 
-	HR(m_renderer->m_device->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, m_renderer->m_vertexShader.GetAddressOf()), L"Failed to create Vertex shader");
-
-	D3D11_INPUT_ELEMENT_DESC layout[] =
-	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	};
-
-	UINT numElements = ARRAYSIZE(layout);
-
-	HR(m_renderer->m_device->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), m_renderer->m_vertexLayout.GetAddressOf()), L"Failed to create vertex layout");
-
-	m_renderer->m_immediateContext->IASetInputLayout(m_renderer->m_vertexLayout.Get());
-
-	ID3DBlob* pPSBlob = nullptr;
-
-	CompileShader(L"../../../../assets/shaders/PS_shader.hlsl", "PSMain", "ps_4_0", &pPSBlob);
-
-	HR(m_renderer->m_device->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, m_renderer->m_pixelShader.GetAddressOf()), L"Failed to create Pixel Shader");
-
+    shader.ProcessShaders(m_renderer, vsShaderPath, psshaderPath);
 
     using namespace DirectX;
     SimpleVertex vertices[] =
@@ -90,7 +73,7 @@ void Spar::Application::Init()
 
     UINT stride = sizeof(SimpleVertex);
     UINT offset = 0;
-    m_renderer->m_immediateContext->IASetVertexBuffers(0, 1, m_renderer->m_vertexBuffer.GetAddressOf(), &stride, &offset);
+    m_renderer->m_context->IASetVertexBuffers(0, 1, m_renderer->m_vertexBuffer.GetAddressOf(), &stride, &offset);
 
     // Create index buffer
     // Create vertex buffer
@@ -123,21 +106,11 @@ void Spar::Application::Init()
 
     HR(m_renderer->m_device->CreateBuffer(&bd, &InitData, m_renderer->m_indexBuffer.GetAddressOf()), L"Failed to create Index Buffer");
 
-    m_renderer->m_immediateContext->IASetIndexBuffer(m_renderer->m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+    m_renderer->m_context->IASetIndexBuffer(m_renderer->m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 
-    m_renderer->m_immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_renderer->m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    //bd.Usage = D3D11_USAGE_DEFAULT;
-    //bd.ByteWidth = sizeof(CBNeverChanges);
-    //bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    //bd.CPUAccessFlags = 0;
-    //HR(m_renderer->m_device->CreateBuffer(&bd, nullptr, &m_CBNeverChanges), L"never changes buffer init");
-    //bd.ByteWidth = sizeof(CBChangesOnResize);
-    //HR(m_renderer->m_device->CreateBuffer(&bd, nullptr, &m_CBChangesOnResize), L"on resize changes buffer init");
-    //bd.ByteWidth = sizeof(CBChangesEveryFrame);
-    //HR(m_renderer->m_device->CreateBuffer(&bd, nullptr, &m_CBChangesEveryFrame), L" every frame changes buffer init");
-
-    // 3. Make sure m_constantBuffer is initialized
+    // Make sure m_constantBuffer is initialized
     bd.Usage = D3D11_USAGE_DEFAULT;
     bd.ByteWidth = sizeof(ConstantBuffer);
     bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
@@ -146,7 +119,10 @@ void Spar::Application::Init()
 
     //load the texture
 
-    HR(CreateDDSTextureFromFile(m_renderer->m_device.Get(), L"../../../../assets/textures/seafloor.dds", nullptr, m_textureView.GetAddressOf()), L"Failed to load texture");
+    const WCHAR* texturePath = L"../../../../assets/textures/seafloor.dds";
+
+    Model model;
+    model.LoadTexture(m_renderer, m_textureView,texturePath);
 
     // Create the sample state
     D3D11_SAMPLER_DESC sampDesc = {};
@@ -224,54 +200,18 @@ void Spar::Application::Update(float dt)
         .vMeshColor = m_meshColor
     };
 
-    m_renderer->m_immediateContext->UpdateSubresource(m_constantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+    m_renderer->m_context->UpdateSubresource(m_constantBuffer.Get(), 0, nullptr, &cb, 0, 0);
     m_world = DirectX::XMMatrixRotationY(angle);
 }
 
 void Spar::Application::Render()
 {
+    m_renderer->Clear();
 
-    assert(m_renderer->m_immediateContext);
-    assert(m_renderer->m_SwapChain);
-    m_renderer->SetViewPort();
-    auto rtv = m_renderer->m_RenderTargetView.Get();
-    m_renderer->m_immediateContext->ClearRenderTargetView(rtv, DirectX::Colors::CadetBlue);
-    m_renderer->m_immediateContext->ClearDepthStencilView(m_renderer->m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-    m_renderer->m_immediateContext->OMSetDepthStencilState(m_renderer->m_depthStencilState.Get(), 1);
-
-    m_renderer->m_immediateContext->OMSetRenderTargets(1, &rtv, m_renderer->m_depthStencilView.Get());
-
-
-
-    // Render a Cube
-    UINT stride = sizeof(SimpleVertex);
-    UINT offset = 0;
-    m_renderer->m_immediateContext->IASetVertexBuffers(0, 1, m_renderer->m_vertexBuffer.GetAddressOf(), &stride, &offset);
-    m_renderer->m_immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    m_renderer->m_immediateContext->IASetInputLayout(m_renderer->m_vertexLayout.Get());
-    m_renderer->m_immediateContext->RSSetState(m_renderer->m_rasterState.Get());
-
-    // Set the shaders
-    m_renderer->m_immediateContext->VSSetShader(m_renderer->m_vertexShader.Get(), nullptr, 0);
-
-    // set the constant buffers
-    m_renderer->m_immediateContext->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
-
-    m_renderer->m_immediateContext->PSSetShader(m_renderer->m_pixelShader.Get(), nullptr, 0);
-
-    m_renderer->m_immediateContext->PSSetShaderResources(0, 1, m_textureView.GetAddressOf());
-    m_renderer->m_immediateContext->PSSetSamplers(0, 1, m_samplerLinear.GetAddressOf());
-
-    // Verify buffer bindings
-    ID3D11Buffer* vertexBuffers[] = { m_renderer->m_vertexBuffer.Get() };
-    m_renderer->m_immediateContext->IASetVertexBuffers(0, 1, vertexBuffers, &stride, &offset);
-    m_renderer->m_immediateContext->IASetIndexBuffer(m_renderer->m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-
-
-    //draw the Cube
-    m_renderer->m_immediateContext->DrawIndexed(36, 0, 0);
-
-    HR((m_renderer->m_SwapChain->Present(0, 0)), L"Failed to draw scene");
+    for (const auto& model : models)
+    {
+        models
+    }
 }
 
 void Spar::Application::Resize()

@@ -1,5 +1,70 @@
 #include "renderer.h"
 
+void Spar::Graphics::Renderer::Init()
+{
+	void InitWindow();
+	void InitD3D11();	
+}
+
+void Spar::Graphics::Renderer::Submit(std::vector<RenderCommand> commands)
+{
+	for (const auto& cmd : commands)
+	{
+		m_context->OMSetDepthStencilState(m_depthStencilState.Get(), 1);
+
+		auto rtv = m_RenderTargetView.Get();
+		m_context->OMSetRenderTargets(1, &rtv, m_depthStencilView.Get());
+
+
+		// Render a Cube
+		UINT stride = sizeof(SimpleVertex);
+		UINT offset = 0;
+		m_context->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), &stride, &offset);
+		m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		m_context->IASetInputLayout(m_vertexLayout.Get());
+		m_context->RSSetState(m_rasterState.Get());
+
+		// Set the shaders
+		m_context->VSSetShader(m_vertexShader.Get(), nullptr, 0);
+
+		// set the constant buffers
+		m_context->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
+
+		m_context->PSSetShader(m_pixelShader.Get(), nullptr, 0);
+
+		m_context->PSSetShaderResources(0, 1, cmd.textureView.GetAddressOf());
+		m_context->PSSetSamplers(0, 1, cmd.samplerState.GetAddressOf());
+
+		// Verify buffer bindings
+		ID3D11Buffer* vertexBuffers[] = { m_vertexBuffer.Get() };
+		m_context->IASetVertexBuffers(0, 1, vertexBuffers, &stride, &offset);
+		m_context->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+
+
+		//draw the Cube
+		m_context->DrawIndexed(36, 0, 0);
+	}
+}
+
+void Spar::Graphics::Renderer::Clear()
+{
+	assert(m_context);
+	assert(m_SwapChain);
+	SetViewPort();
+	auto rtv = m_RenderTargetView.Get();
+	m_context->ClearRenderTargetView(rtv, DirectX::Colors::CadetBlue);
+	m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+}
+
+void Spar::Graphics::Renderer::Present()
+{
+	m_SwapChain->Present(1, 0);
+}
+
+
+
+
 void Spar::Graphics::Renderer::InitWindow()
 {
 	//Initialize SDL
@@ -33,7 +98,6 @@ void Spar::Graphics::Renderer::InitWindow()
 	}
 }
 
-
 void Spar::Graphics::Renderer::InitD3D11()
 {
 	CreateDevice();
@@ -54,7 +118,7 @@ void Spar::Graphics::Renderer::CreateDevice()
 	createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
-	HR(D3D11CreateDevice(0, D3D_DRIVER_TYPE_HARDWARE, 0, createDeviceFlags, 0, 0, D3D11_SDK_VERSION, m_device.GetAddressOf(), &m_featureLevel, m_immediateContext.GetAddressOf()), L"D3D11CreateDevice Failed.");
+	HR(D3D11CreateDevice(0, D3D_DRIVER_TYPE_HARDWARE, 0, createDeviceFlags, 0, 0, D3D11_SDK_VERSION, m_device.GetAddressOf(), &m_featureLevel, m_context.GetAddressOf()), L"D3D11CreateDevice Failed.");
 
 	if (m_featureLevel != D3D_FEATURE_LEVEL_11_0)
 	{
@@ -190,13 +254,13 @@ void Spar::Graphics::Renderer::CreateDepthStencilView()
 	HR(m_device->CreateDepthStencilState(&depthStencilDesc, m_depthStencilState.GetAddressOf()), L"Failed to create depth stencil state");
 
 	// Set the depth stencil state
-	m_immediateContext->OMSetDepthStencilState(m_depthStencilState.Get(), 1);
+	m_context->OMSetDepthStencilState(m_depthStencilState.Get(), 1);
 
 	HR(m_device->CreateDepthStencilView(m_depthStencilBuffer.Get(), 0, m_depthStencilView.GetAddressOf()), L"Failed to create Depth/Stencil view");
 
 	//add to immediate context
 
-	m_immediateContext->OMSetRenderTargets(1, m_RenderTargetView.GetAddressOf(), m_depthStencilView.Get());
+	m_context->OMSetRenderTargets(1, m_RenderTargetView.GetAddressOf(), m_depthStencilView.Get());
 
 }
 
@@ -211,7 +275,7 @@ void Spar::Graphics::Renderer::SetViewPort()
 	vp.MinDepth = 0.0f;
 	vp.MaxDepth = 1.0f;
 
-	m_immediateContext->RSSetViewports(1, &vp);
+	m_context->RSSetViewports(1, &vp);
 }
 
 

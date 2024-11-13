@@ -11,9 +11,14 @@ namespace Spar::Graphics
 	class Renderer
 	{
 	public:
+		void Init();
+		void Submit(std::vector<RenderCommand> cmd);
+		void Clear();
+		void Present();
+	private:
+
 		void InitD3D11();
 		void InitWindow();
-
 		void CreateDevice();
 		void CheckMSAAQualityLevel();
 		void CreateSwapChain();
@@ -22,6 +27,14 @@ namespace Spar::Graphics
 		void SetViewPort();
 		float AspectRatio()const;
 
+	public:
+		wrl::ComPtr<ID3D11Device> m_device;
+		wrl::ComPtr<ID3D11DeviceContext> m_context;
+
+		UINT m_width = 1000;
+		UINT m_height = 600;
+
+		std::vector<RenderCommand> commands;
 
 	private:
 		UINT createDeviceFlags = 0;
@@ -32,12 +45,6 @@ namespace Spar::Graphics
 		SDL_Window* window = NULL;
 		//The surface contained by the window
 		SDL_Surface* screenSurface = NULL;
-	public:
-		UINT m_width = 1000;
-		UINT m_height = 600;
-
-		wrl::ComPtr<ID3D11Device> m_device;
-		wrl::ComPtr<ID3D11DeviceContext> m_immediateContext;
 
 		bool m_enableMSAA = false;
 		UINT m_m4xMsaaQuality;
