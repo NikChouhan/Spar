@@ -42,22 +42,4 @@ namespace Spar
 
         return S_OK;
     }
-
-    HRESULT Model::LoadTexture(std::shared_ptr<Graphics::Renderer> renderer, wrl::ComPtr<ID3D11ShaderResourceView> m_textureView, const WCHAR* path)
-    {
-        if (!path)
-        {
-            return E_INVALIDARG;
-        }
-
-        HRESULT hr = DirectX::CreateDDSTextureFromFile(renderer->m_device.Get(), path, nullptr, m_textureView.GetAddressOf());
-
-
-        if (FAILED(hr))
-        {
-            return hr;
-        }
-
-        return S_OK;
-    }
 }

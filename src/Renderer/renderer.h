@@ -5,18 +5,20 @@
 #include <string>
 #include <sstream>
 #include "Buffer.h"
-#include "Model.h"
+#include "Model.h"	
+
 
 namespace Spar::Graphics
 {
 	class Renderer
 	{
 	public:
+		Renderer();
+		~Renderer();
 		void Init();
 		void Submit(Model model);
 		void Clear();
 		void Present() const;
-	private:
 
 		void InitD3D11();
 		void InitWindow();
@@ -37,7 +39,6 @@ namespace Spar::Graphics
 
 		//std::vector<DrawableAssets> assets;
 
-	//private:
 		UINT createDeviceFlags = 0;
 		D3D_FEATURE_LEVEL m_featureLevel;
 

@@ -48,12 +48,13 @@ namespace Spar
 		return hr;
 	}
 
-	HRESULT Shader::ProcessShaders(std::shared_ptr<Graphics::Renderer> renderer, const WCHAR* vsShaderPath, const WCHAR* psShaderPath)
+	HRESULT Shader::ProcessShaders(std::shared_ptr<Graphics::Renderer> rendererPtr, const WCHAR* vsShaderPath, const WCHAR* psShaderPath)
 	{
+		assert(rendererPtr->m_device);
 		ID3DBlob* pVSBlob = nullptr;
 		CompileShader(vsShaderPath, "VSMain", "vs_4_0", &pVSBlob);
 
-		HRESULT hr1 = renderer->m_device->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, renderer->m_vertexShader.GetAddressOf());
+		HRESULT hr1 = rendererPtr->m_device->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, rendererPtr->m_vertexShader.GetAddressOf());
 
 		D3D11_INPUT_ELEMENT_DESC layout[] =
 		{
@@ -63,19 +64,18 @@ namespace Spar
 
 		UINT numElements = ARRAYSIZE(layout);
 
-		renderer->m_device->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), renderer->m_vertexLayout.GetAddressOf());
+		rendererPtr->m_device->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), rendererPtr->m_vertexLayout.GetAddressOf());
 
-		renderer->m_context->IASetInputLayout(renderer->m_vertexLayout.Get());
+		rendererPtr->m_context->IASetInputLayout(rendererPtr->m_vertexLayout.Get());
 
 		ID3DBlob* pPSBlob = nullptr;
 
 		CompileShader(psShaderPath, "PSMain", "ps_4_0", &pPSBlob);
 
-		HRESULT hr2 = renderer->m_device->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, renderer->m_pixelShader.GetAddressOf());
+		HRESULT hr2 = rendererPtr->m_device->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, rendererPtr->m_pixelShader.GetAddressOf());
 
-		if (!hr1 && !hr2)
-			return E_FAIL;
-
-		return S_OK;
+		if (hr1 == S_OK && hr2 == S_OK)
+			return S_OK;
+		else return E_FAIL;
 	}
 };

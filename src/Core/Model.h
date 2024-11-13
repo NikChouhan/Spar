@@ -2,7 +2,6 @@
 
 #include "cgltf.h"
 #include "WinUtil.h"
-#include "renderer.h"
 #include "DDSTextureLoader.h"
 #include "Buffer.h"
 
@@ -15,11 +14,8 @@ namespace Spar
         Model();
         ~Model();
         HRESULT LoadModel(const char* path);
-        HRESULT LoadTexture(std::shared_ptr<Spar::Graphics::Renderer> renderer, wrl::ComPtr<ID3D11ShaderResourceView> m_textureView, const WCHAR* path);
-
     //private:
         cgltf_data* m_model;
-        std::shared_ptr<Spar::Graphics::Renderer> renderer;
         wrl::ComPtr<ID3D11ShaderResourceView> m_textureView = nullptr;
 
         DrawableAssets assets{};

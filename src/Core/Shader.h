@@ -2,7 +2,6 @@
 
 #include "WinUtil.h"
 #include "renderer.h"
-
 namespace Spar
 {
 	class Shader
@@ -26,7 +25,6 @@ namespace Spar
 
 
 	private:
-		std::shared_ptr<Graphics::Renderer> renderer;
 		const WCHAR* path;
 
 

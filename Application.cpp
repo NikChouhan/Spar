@@ -3,7 +3,8 @@
 
 Spar::Application::Application()
 {
-
+    m_renderer = std::make_shared<Graphics::Renderer>();
+    m_camera = std::make_shared<Graphics::Camera>();
 }
 
 Spar::Application::~Application()
@@ -68,9 +69,10 @@ void Spar::Application::Init()
     D3D11_SUBRESOURCE_DATA InitData = {};
     InitData.pSysMem = vertices;
 
-    m_renderer->m_device->CreateBuffer(&bd, &InitData, textureCube.assets.vertexBuffer.GetAddressOf());
-
     VertexBuffer vb;
+
+    m_renderer->m_device->CreateBuffer(&bd, &InitData, vb.Buffer.GetAddressOf());
+
     IndexBuffer ib;
 
     vb.Stride = sizeof(SimpleVertex);
@@ -122,12 +124,16 @@ void Spar::Application::Init()
     //load the model
 
     const WCHAR* texturePath = L"../../../../assets/textures/seafloor.dds";
-    textureCube.LoadTexture(m_renderer, textureCube.m_textureView, texturePath);
+    HRESULT hr = CreateDDSTextureFromFile(m_renderer->m_device.Get(), texturePath, nullptr, textureCube.assets.textureView.GetAddressOf());
 
     /*const char* path = "../../../../assets/models/sponza";
     HRESULT hr = textureCube.LoadModel(path);*/
 
-
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = sizeof(ConstantBuffer);
+    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    bd.CPUAccessFlags = 0;
+    HR(m_renderer->m_device->CreateBuffer(&bd, nullptr, &textureCube.assets.constantBuffer), L"Failed to create constant buffer");
 
     m_world = DirectX::XMMatrixIdentity();
 
@@ -183,7 +189,7 @@ void Spar::Application::Update(float dt)
         .vMeshColor = m_meshColor
     };
 
-    m_renderer->m_context->UpdateSubresource(m_constantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+    m_renderer->m_context->UpdateSubresource(textureCube.assets.constantBuffer.Get(), 0, nullptr, &cb, 0, 0);
     m_world = DirectX::XMMatrixRotationY(angle);
 }
 
@@ -197,6 +203,8 @@ void Spar::Application::Render()
     {
         m_renderer->Submit(model);
     }
+
+    m_renderer->Present();
     
 }
 

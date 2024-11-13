@@ -13,6 +13,7 @@ add_includedirs("src", "vendor", "src/Core", "src/Renderer", "vendor/Imgui", "ve
 set_languages("cxx20", "c17")
 set_warnings("all", "extra")
 if(mode == "debug") then
+    set_symbols("debug")
     add_defines("DEBUG")
     set_optimize("none")
 
@@ -33,6 +34,10 @@ target("scene")
     on_install(function (target)
         os.cp("vendor/SDL2/lib/SDL2.dll", target:installdir())
     end)
+
+    after_link(function (target) 
+    print("Linking commands for " .. target:name())
+end)
     -- on_run(function (target)
     --     os.execv("cmd", {"/c", "c:/dev/raddbg/raddbg.exe", target:installdir()})
     -- end)

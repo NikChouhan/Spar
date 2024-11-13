@@ -25,14 +25,11 @@ namespace Spar
 		void Resize();
 		void Render();
 		void ShutDown();
-	protected:
-		Graphics::Renderer* GetRenderer() const { return m_renderer.get(); }
-
 	public:
 		//public member variables
 
-		std::shared_ptr<Graphics::Renderer> m_renderer = std::make_shared<Graphics::Renderer>();
-		std::shared_ptr<Graphics::Camera> m_camera = std::make_shared<Graphics::Camera>();
+		std::shared_ptr<Graphics::Renderer> m_renderer;
+		std::shared_ptr<Graphics::Camera> m_camera;
 
 		Model textureCube = {};
 

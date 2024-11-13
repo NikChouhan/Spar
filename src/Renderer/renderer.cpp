@@ -1,9 +1,19 @@
 #include "renderer.h"
 
+Spar::Graphics::Renderer::Renderer()
+{
+
+}
+
+Spar::Graphics::Renderer::~Renderer()
+{
+
+}
+
 void Spar::Graphics::Renderer::Init()
 {
-	void InitWindow();
-	void InitD3D11();	
+	InitWindow();
+	InitD3D11();	
 }
 
 void Spar::Graphics::Renderer::Submit(Model model)
@@ -16,9 +26,12 @@ void Spar::Graphics::Renderer::Submit(Model model)
 
 
 	// Render a Cube
-	UINT stride = sizeof(SimpleVertex);
-	UINT offset = 0;
-	m_context->IASetVertexBuffers(0, 1, model.assets.vertexBuffer.GetAddressOf(), &stride, &offset);
+	VertexBuffer vb{
+		.Buffer = model.assets.vertexBuffer,
+		.Stride = sizeof(SimpleVertex),
+		.Offset = 0
+	};
+	m_context->IASetVertexBuffers(0, 1, model.assets.vertexBuffer.GetAddressOf(), &vb.Stride, &vb.Offset);
 	m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_context->IASetInputLayout(m_vertexLayout.Get());
 	m_context->RSSetState(m_rasterState.Get());
@@ -36,7 +49,7 @@ void Spar::Graphics::Renderer::Submit(Model model)
 
 	// Verify buffer bindings
 	ID3D11Buffer* vertexBuffers[] = { model.assets.vertexBuffer.Get() };
-	m_context->IASetVertexBuffers(0, 1, vertexBuffers, &stride, &offset);
+	m_context->IASetVertexBuffers(0, 1, vertexBuffers, &vb.Stride, &vb.Offset);
 	m_context->IASetIndexBuffer(model.assets.indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 
 	D3D11_RASTERIZER_DESC rasterDesc = {};
