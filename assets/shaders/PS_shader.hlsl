@@ -16,7 +16,7 @@ struct PS_OUTPUT
 PS_OUTPUT PSMain( PS_INPUT input)
 {
     PS_OUTPUT output = (PS_OUTPUT)0;
-    output.Color = txDiffuse.Sample( samplerLinear, input.Tex);
+    output.Color = txDiffuse.Sample( samplerLinear, input.Tex) * input.COLOR;
 
     return output;
 }
