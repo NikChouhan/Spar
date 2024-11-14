@@ -10,12 +10,6 @@ struct ConstantBuffer
     DirectX::XMFLOAT4 vMeshColor;
 };
 
-struct SimpleVertex
-{
-    DirectX::XMFLOAT3 Pos;
-    DirectX::XMFLOAT2 Tex;
-};
-
 struct DrawableAssets
 {
 

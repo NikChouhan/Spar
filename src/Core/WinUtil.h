@@ -15,6 +15,7 @@
 #include <memory>
 
 
+
 namespace SM = DirectX::SimpleMath;
 namespace wrl = Microsoft::WRL;
 
