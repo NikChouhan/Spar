@@ -2,7 +2,7 @@
 
 #include "WinUtil.h"
 
-namespace Spar::Graphics
+namespace Spar
 {
 	class Camera
 	{

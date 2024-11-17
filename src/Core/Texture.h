@@ -3,15 +3,20 @@
 
 namespace Spar
 {
+    class Renderer;
+}
+
+namespace Spar
+{
     class Texture
     {
     public:
         Texture();
         ~Texture();
-        void LoadTexture(const char* path);
+        void LoadTexture(std::shared_ptr<Spar::Renderer> renderer ,const char* path);
         //wrl::ComPtr<ID3D11ShaderResourceView> GetTextureView();
 
-    private:
+    public:
         wrl::ComPtr<ID3D11ShaderResourceView> m_textureView = nullptr;
     };
 }

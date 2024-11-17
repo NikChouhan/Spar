@@ -1,9 +1,11 @@
 #include "Application.h"
+#include "renderer.h"
+#include "Camera.h"
 
 Spar::Application::Application()
 {
-    m_renderer = std::make_shared<Graphics::Renderer>();
-    m_camera = std::make_shared<Graphics::Camera>();
+    m_renderer = std::make_shared<Renderer>();
+    m_camera = std::make_shared<Camera>();
 }
 
 Spar::Application::~Application()
@@ -20,11 +22,15 @@ void Spar::Application::Init()
 
     //shader stuff
     Shader shader;
-    const WCHAR* vsShaderPath = L"../../../../assets/shaders/VS_shader.hlsl";
-    const WCHAR* psshaderPath = L"../../../../assets/shaders/PS_shader.hlsl";
+    const WCHAR* vsShaderPath = L"../../../../assets/shaders/Model/ModelVS.hlsl";
+    const WCHAR* psshaderPath = L"../../../../assets/shaders/Model/ModelPS.hlsl";
 
     shader.ProcessShaders(m_renderer, vsShaderPath, psshaderPath);
 
+    // Load model
+    suzanne.LoadModel(m_renderer, "../../../../assets/models/Suzanne/glTF/Suzanne.gltf");
+
+    // Initialize the world matrix
     m_world = DirectX::XMMatrixIdentity();
 
     // Initialize the view matrix
@@ -80,7 +86,7 @@ void Spar::Application::Render()
 {
     m_renderer->Clear();
 
-    models.push_back(textureCube);
+    models.push_back(suzanne);
 
     for (auto& model : models)
     {

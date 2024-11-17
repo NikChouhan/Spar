@@ -1,23 +1,24 @@
 #include "renderer.h"
 #include "Model.h"
+#include "Log.h"
 
-Spar::Graphics::Renderer::Renderer()
+Spar::Renderer::Renderer()
 {
 
 }
 
-Spar::Graphics::Renderer::~Renderer()
+Spar::Renderer::~Renderer()
 {
 
 }
 
-void Spar::Graphics::Renderer::Init()
+void Spar::Renderer::Init()
 {
 	InitWindow();
 	InitD3D11();	
 }
 
-void Spar::Graphics::Renderer::Submit(Model model)
+void Spar::Renderer::Submit(Model model)
 {
 	// set the puny things
 	m_context->OMSetDepthStencilState(m_depthStencilState.Get(), 1);
@@ -25,12 +26,16 @@ void Spar::Graphics::Renderer::Submit(Model model)
 	m_context->OMSetRenderTargets(1, &rtv, m_depthStencilView.Get());
 	m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_context->IASetInputLayout(m_vertexLayout.Get());
+
+	model.SetTexResources();
+
 	// Set the shaders
 	m_context->VSSetShader(m_vertexShader.Get(), nullptr, 0);
 	m_context->PSSetShader(m_pixelShader.Get(), nullptr, 0);
+
 }
 
-void Spar::Graphics::Renderer::Clear()
+void Spar::Renderer::Clear()
 {
 	assert(m_context);
 	assert(m_SwapChain);
@@ -41,7 +46,7 @@ void Spar::Graphics::Renderer::Clear()
 
 }
 
-void Spar::Graphics::Renderer::Present() const
+void Spar::Renderer::Present() const
 {
 	m_SwapChain->Present(1, 0);
 }
@@ -49,7 +54,7 @@ void Spar::Graphics::Renderer::Present() const
 
 
 
-void Spar::Graphics::Renderer::InitWindow()
+void Spar::Renderer::InitWindow()
 {
 	//Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -82,7 +87,7 @@ void Spar::Graphics::Renderer::InitWindow()
 	}
 }
 
-void Spar::Graphics::Renderer::InitD3D11()
+void Spar::Renderer::InitD3D11()
 {
 	CreateDevice();
 	CheckMSAAQualityLevel();
@@ -96,27 +101,31 @@ void Spar::Graphics::Renderer::InitD3D11()
 
 
 
-void Spar::Graphics::Renderer::CreateDevice()
+void Spar::Renderer::CreateDevice()
 {
 #if defined(DEBUG) || defined(_DEBUG) 
 	createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
-	HR(D3D11CreateDevice(0, D3D_DRIVER_TYPE_HARDWARE, 0, createDeviceFlags, 0, 0, D3D11_SDK_VERSION, m_device.GetAddressOf(), &m_featureLevel, m_context.GetAddressOf()), L"D3D11CreateDevice Failed.");
+	HRESULT hr = D3D11CreateDevice(0, D3D_DRIVER_TYPE_HARDWARE, 0, createDeviceFlags, 0, 0, D3D11_SDK_VERSION, m_device.GetAddressOf(), &m_featureLevel, m_context.GetAddressOf());
 
+	if(FAILED(hr))
+	{
+		Log::Error("Failed to create D3D11 device");
+	}
 	if (m_featureLevel != D3D_FEATURE_LEVEL_11_0)
 	{
 		MessageBox(0, L"Direct3D Feature Level 11 unsupported.", 0, 0);
 	}
 }
 
-void Spar::Graphics::Renderer::CheckMSAAQualityLevel()
+void Spar::Renderer::CheckMSAAQualityLevel()
 {
-	HR(m_device->CheckMultisampleQualityLevels(DXGI_FORMAT_B8G8R8A8_UNORM, 4, &m_m4xMsaaQuality), L"MSAA4x Support check Failed.");
+	m_device->CheckMultisampleQualityLevels(DXGI_FORMAT_B8G8R8A8_UNORM, 4, &m_m4xMsaaQuality);
 	m_enableMSAA = true;
 }
 
-void Spar::Graphics::Renderer::CreateSwapChain()
+void Spar::Renderer::CreateSwapChain()
 {
 	DXGI_SWAP_CHAIN_DESC sd = {};
 	sd.BufferDesc.Width = m_width;
@@ -149,13 +158,25 @@ void Spar::Graphics::Renderer::CreateSwapChain()
 	sd.OutputWindow = m_hwnd;
 
 	IDXGIDevice* dxgiDevice = nullptr;
-	HR((m_device->QueryInterface(__uuidof(IDXGIDevice), reinterpret_cast<void**> (&dxgiDevice))), L"Failed to query DXGI device");
+	HRESULT hr = m_device->QueryInterface(__uuidof(IDXGIDevice), reinterpret_cast<void**> (&dxgiDevice));
+	if (FAILED(hr))
+	{
+		Log::Error("Failed to get DXGI device");
+	}
 
 	IDXGIAdapter* dxgiAdapter = nullptr;
-	HR(dxgiDevice->GetParent(__uuidof(IDXGIAdapter), reinterpret_cast<void**> (&dxgiAdapter)), L"Failed to Get DXGI Adapter");
+	hr = dxgiDevice->GetParent(__uuidof(IDXGIAdapter), reinterpret_cast<void**> (&dxgiAdapter));
+	if (FAILED(hr))
+	{
+		Log::Error("Failed to get DXGI adapter");
+	}
 
 	IDXGIFactory* dxgiFactory = 0;
-	HR(dxgiAdapter->GetParent(__uuidof(IDXGIFactory), (void**)&dxgiFactory), L"Failed to get DXGI factory pointer");
+	dxgiAdapter->GetParent(__uuidof(IDXGIFactory), (void**)&dxgiFactory);
+	if(FAILED(hr))
+	{
+		Log::Error("Failed to get DXGI factory");
+	}
 
 	//enumerating devices for fun
 
@@ -180,8 +201,12 @@ void Spar::Graphics::Renderer::CreateSwapChain()
 	}
 
 
-	HR(dxgiFactory->CreateSwapChain(m_device.Get(), &sd, m_SwapChain.GetAddressOf()), L"Failed to create swapchain");
+	dxgiFactory->CreateSwapChain(m_device.Get(), &sd, m_SwapChain.GetAddressOf());
 
+	if(FAILED(hr))
+	{
+		Log::Error("Failed to create swap chain");
+	}
 
 	ReleaseCOM(dxgiDevice);
 	ReleaseCOM(dxgiAdapter);
@@ -189,18 +214,27 @@ void Spar::Graphics::Renderer::CreateSwapChain()
 }
 
 
-void Spar::Graphics::Renderer::CreateRenderTargetView()
+void Spar::Renderer::CreateRenderTargetView()
 {
 	ID3D11Texture2D* backBuffer = nullptr;
-	HR(m_SwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**> (&backBuffer)), L"Failed to get buffer for render target view");
+	HRESULT hr = m_SwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**> (&backBuffer));
+	if(FAILED(hr))
+	{
+		Log::Error("Failed to get back buffer for rtv");
+	}
 
-	HR(m_device->CreateRenderTargetView(backBuffer, 0, m_RenderTargetView.GetAddressOf()), L"Failed to create Render Target");
+	m_device->CreateRenderTargetView(backBuffer, 0, m_RenderTargetView.GetAddressOf());
+
+	if(FAILED(hr))
+	{
+		Log::Error("Failed to create render target view");
+	}
 
 	ReleaseCOM(backBuffer);
 
 }
 
-void Spar::Graphics::Renderer::CreateDepthStencilView()
+void Spar::Renderer::CreateDepthStencilView()
 {
 	D3D11_TEXTURE2D_DESC depthTextDesc = {};
 	depthTextDesc.Width = m_width;
@@ -225,8 +259,12 @@ void Spar::Graphics::Renderer::CreateDepthStencilView()
 	depthTextDesc.CPUAccessFlags = 0;
 	depthTextDesc.MiscFlags = 0;
 
-	HR(m_device->CreateTexture2D(&depthTextDesc, 0, m_depthStencilBuffer.GetAddressOf()), L"Failed to create Depth/Stencil buffer");
+	HRESULT hr = m_device->CreateTexture2D(&depthTextDesc, 0, m_depthStencilBuffer.GetAddressOf());
 
+	if(FAILED(hr))
+	{
+		Log::Error("Failed to create depth stencil buffer");
+	}
 
 	// Create depth stencil state
 	D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
@@ -235,12 +273,21 @@ void Spar::Graphics::Renderer::CreateDepthStencilView()
 	depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
 	depthStencilDesc.StencilEnable = FALSE;
 
-	HR(m_device->CreateDepthStencilState(&depthStencilDesc, m_depthStencilState.GetAddressOf()), L"Failed to create depth stencil state");
+	hr = m_device->CreateDepthStencilState(&depthStencilDesc, m_depthStencilState.GetAddressOf());
+	if(FAILED(hr))
+	{
+		Log::Error("Failed to create depth stencil state");
+	}
 
 	// Set the depth stencil state
 	m_context->OMSetDepthStencilState(m_depthStencilState.Get(), 1);
 
-	HR(m_device->CreateDepthStencilView(m_depthStencilBuffer.Get(), 0, m_depthStencilView.GetAddressOf()), L"Failed to create Depth/Stencil view");
+	hr = m_device->CreateDepthStencilView(m_depthStencilBuffer.Get(), 0, m_depthStencilView.GetAddressOf());
+
+	if(FAILED(hr))
+	{
+		Log::Error("Failed to create depth stencil view");
+	}
 
 	//add to immediate context
 
@@ -248,7 +295,7 @@ void Spar::Graphics::Renderer::CreateDepthStencilView()
 
 }
 
-void Spar::Graphics::Renderer::SetViewPort() const
+void Spar::Renderer::SetViewPort() const
 {
 	D3D11_VIEWPORT vp = {};
 
@@ -263,7 +310,7 @@ void Spar::Graphics::Renderer::SetViewPort() const
 }
 
 
-float Spar::Graphics::Renderer::AspectRatio() const
+float Spar::Renderer::AspectRatio() const
 {
 	return static_cast<float>(m_width) / static_cast<float> (m_height);
 }

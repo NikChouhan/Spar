@@ -6,17 +6,10 @@
 #include "cgltf.h"
 #include "WinUtil.h"
 
-#define MAX_MESHLET_TRIANGLES 124
-#define MAX_MESHLET_VERTICES 64
-
-struct AABB
+namespace Spar
 {
-    DirectX::XMFLOAT3 Min;
-    DirectX::XMFLOAT3 Max;
-
-    DirectX::XMFLOAT3 Center;
-    DirectX::XMFLOAT3 Extent;
-};
+    class Renderer;
+}
 
 enum class TextureType
 {
@@ -33,7 +26,6 @@ struct SimpleVertex
     DirectX::XMFLOAT2 Tex;
     DirectX::XMFLOAT3 Normal;
 };
-
 
 struct Material
 {
@@ -55,44 +47,28 @@ struct Material
     wrl::ComPtr<ID3D11ShaderResourceView> EmissiveView = nullptr;
     wrl::ComPtr<ID3D11ShaderResourceView> AOView = nullptr;
 
-    
-
-
+    wrl::ComPtr<ID3D11SamplerState> samplerState;
     DirectX::XMFLOAT3 FlatColor;
-};
-
-struct MeshletBounds
-{
-    /* bounding sphere, useful for frustum and occlusion culling */
-	DirectX::XMFLOAT3 center;
-	float radius;
-
-	/* normal cone, useful for backface culling */
-	DirectX::XMFLOAT3 cone_apex;
-	DirectX::XMFLOAT3 cone_axis;
-	float cone_cutoff; /* = cos(angle/2) */
 };
 
 struct Primitive
 {
-    wrl::ComPtr<ID3D11Buffer> VertexBuffer = nullptr;
-    wrl::ComPtr<ID3D11Buffer> IndexBuffer = nullptr;
-    wrl::ComPtr<ID3D11Buffer> MeshletBuffer = nullptr;
-    wrl::ComPtr<ID3D11Buffer> MeshletVertices = nullptr;
-    wrl::ComPtr<ID3D11Buffer> MeshletTriangles = nullptr;
-    wrl::ComPtr<ID3D11Buffer> MeshletBounds = nullptr;
 
-    uint32_t VertexCount;
-    uint32_t IndexCount;
-    uint32_t MeshletCount;
+    wrl::ComPtr<ID3D11Buffer> vertexBuffer = nullptr;
+    wrl::ComPtr<ID3D11Buffer> indexBuffer = nullptr;
+    wrl::ComPtr<ID3D11SamplerState> samplerState;
+    wrl::ComPtr<ID3D11Buffer> constantBuffer = nullptr;
 
-    std::string name;
+    uint32_t vertexCount = 0;
+    uint32_t indexCount = 0;
 
-    uint32_t MaterialIndex;
+    std::string name = "";
 
-    AABB BoundingBox = {};
+    uint32_t materialIndex = 0;
+
+    uint32_t startIndex = 0;
+    uint32_t startVertex = 0;
 };
-
 
 namespace Spar
 {
@@ -101,20 +77,37 @@ namespace Spar
     public:
         Model();
         ~Model();
-        void LoadModel(std::string path);
+        void LoadModel(std::shared_ptr<Spar::Renderer> renderer, std::string path);
 
-        cgltf_data* m_model;
-        wrl::ComPtr<ID3D11ShaderResourceView> m_textureView = nullptr;
+        void SetBuffers();
+
+        void SetTexResources();
 
     private:
-        void ProcessNode(cgltf_node* node, const cgltf_data* data, std::vector<SimpleVertex>& vertices, std::vector<u32>& indices);
-        void ProcessMesh(cgltf_mesh* mesh, const cgltf_data* data, std::vector<SimpleVertex>& vertices, std::vector<u32>& indices);
-        void ProcessPrimitive(cgltf_primitive* primitive, const cgltf_data* data, std::vector<SimpleVertex>& vertices, std::vector<u32>& indices);
-        
+        void ProcessNode(cgltf_node *node, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices);
+        void ProcessMesh(cgltf_mesh *mesh, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices);
+        void ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices);
+
+        void LoadMaterialTexture(Material &mat, cgltf_texture_view *view, TextureType type);
+
     public:
+        u32 vertexOffset = 0;
+        u32 indexOffset = 0;
+        cgltf_data *m_model;
+        wrl::ComPtr<ID3D11ShaderResourceView> m_textureView = nullptr;
         std::string m_dirPath;
         std::string name;
         std::vector<SimpleVertex> vertices;
         std::vector<u32> indices;
+        std::vector<Primitive> primitives;
+        std::vector<Material> materials;
+
+        std::shared_ptr<Spar::Renderer> renderer;
+
+    private:
+        wrl::ComPtr<ID3D11Buffer> m_vertexBuffer;
+        wrl::ComPtr<ID3D11Buffer> m_indexBuffer;
+        UINT m_vertexCount;
+        UINT m_indexCount;
     };
 }

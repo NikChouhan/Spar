@@ -2,9 +2,8 @@
 
 
 using namespace DirectX;
-namespace Spar::Graphics
+namespace Spar
 {
-
     Camera::Camera()
         : m_position(0.0f, 0.0f, -1.0f)
         , m_target(0.0f, 0.0f, 0.0f)
@@ -148,4 +147,4 @@ namespace Spar::Graphics
     {
         m_view = XMMatrixLookAtLH(m_position, m_target, m_up);
     }
-}  // namespace CGL::Graphics
+}

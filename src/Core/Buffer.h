@@ -12,13 +12,8 @@ struct ConstantBuffer
 
 struct DrawableAssets
 {
-
     wrl::ComPtr<ID3D11Buffer> vertexBuffer;
     wrl::ComPtr<ID3D11Buffer> indexBuffer;
-    wrl::ComPtr<ID3D11ShaderResourceView> textureView;
-    wrl::ComPtr<ID3D11SamplerState> samplerState;
-    wrl::ComPtr<ID3D11Buffer> constantBuffer = nullptr;
-    UINT indexCount;
 };
 
 struct VertexBuffer

@@ -8,7 +8,7 @@
 
 namespace Spar { class Model; }
 
-namespace Spar::Graphics
+namespace Spar
 {
 	class Renderer
 	{

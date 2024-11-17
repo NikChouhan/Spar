@@ -4,11 +4,15 @@
 #include "Camera.h"
 #include <string>
 #include <sstream>
-#include "renderer.h"
-#include "DDSTextureLoader.h"
 #include "Shader.h"
 #include "Buffer.h"
 #include "Model.h"
+
+namespace Spar
+{
+	class Camera;
+	class Renderer;
+}
 
 namespace Spar
 {
@@ -28,13 +32,13 @@ namespace Spar
 	public:
 		//public member variables
 
-		std::shared_ptr<Graphics::Renderer> m_renderer;
-		std::shared_ptr<Graphics::Camera> m_camera;
+		std::shared_ptr<Renderer> m_renderer;
+		std::shared_ptr<Camera> m_camera;
 
 		wrl::ComPtr<ID3D11RasterizerState> m_rasterState = nullptr;
 
 
-		Model textureCube = {};
+		Model suzanne = {};
 
 		std::vector<Model> models{};
 
