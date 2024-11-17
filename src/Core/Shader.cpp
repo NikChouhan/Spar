@@ -1,5 +1,6 @@
 #include "Shader.h"
 #include "renderer.h"
+#include "Log.h"
 
 namespace Spar
 {
@@ -49,13 +50,16 @@ namespace Spar
 		return hr;
 	}
 
-	HRESULT Shader::ProcessShaders(std::shared_ptr<Spar::Graphics::Renderer> rendererPtr, const WCHAR* vsShaderPath, const WCHAR* psShaderPath)
+	HRESULT Shader::ProcessShaders(std::shared_ptr<Spar::Renderer> rendererPtr, const WCHAR* vsShaderPath, const WCHAR* psShaderPath)
 	{
 		assert(rendererPtr->m_device);
 		ID3DBlob* pVSBlob = nullptr;
 		CompileShader(vsShaderPath, "VSMain", "vs_4_0", &pVSBlob);
 
 		HRESULT hr1 = rendererPtr->m_device->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, rendererPtr->m_vertexShader.GetAddressOf());
+
+		if (FAILED(hr1))
+			Log::Error("Failed to create vertex shader");
 
 		D3D11_INPUT_ELEMENT_DESC layout[] =
 		{
@@ -74,6 +78,9 @@ namespace Spar
 		CompileShader(psShaderPath, "PSMain", "ps_4_0", &pPSBlob);
 
 		HRESULT hr2 = rendererPtr->m_device->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, rendererPtr->m_pixelShader.GetAddressOf());
+
+		if (FAILED(hr2))
+			Log::Error("Failed to create Pixel Shader");
 
 		if (hr1 == S_OK && hr2 == S_OK)
 			return S_OK;

@@ -2,7 +2,7 @@
 
 #include "WinUtil.h"
 
-namespace Spar::Graphics
+namespace Spar
 {
 	class Renderer;
 }
@@ -19,7 +19,7 @@ namespace Spar
 		{
 		}
 
-		HRESULT ProcessShaders(std::shared_ptr<Graphics::Renderer> renderer, const WCHAR *vsShaderPath, const WCHAR *psShaderPath);
+		HRESULT ProcessShaders(std::shared_ptr<Spar::Renderer> renderer, const WCHAR *vsShaderPath, const WCHAR *psShaderPath);
 
 	private:
 		HRESULT CompileShader(const WCHAR *fileName, LPCSTR entryPoint, LPCSTR shaderModel, ID3DBlob **blob);
