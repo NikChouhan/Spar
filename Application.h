@@ -31,6 +31,9 @@ namespace Spar
 		std::shared_ptr<Graphics::Renderer> m_renderer;
 		std::shared_ptr<Graphics::Camera> m_camera;
 
+		wrl::ComPtr<ID3D11RasterizerState> m_rasterState = nullptr;
+
+
 		Model textureCube = {};
 
 		std::vector<Model> models{};

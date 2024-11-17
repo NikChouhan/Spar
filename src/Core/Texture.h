@@ -1,6 +1,5 @@
 #include "WinUtil.h"
-#include "string"
-#include "Buffer.h"
+#include "Log.h"
 
 namespace Spar
 {
@@ -9,11 +8,10 @@ namespace Spar
     public:
         Texture();
         ~Texture();
-        void LoadTexture(std::string path);
-        wrl::ComPtr<ID3D11ShaderResourceView> GetTextureView();
+        void LoadTexture(const char* path);
+        //wrl::ComPtr<ID3D11ShaderResourceView> GetTextureView();
 
     private:
         wrl::ComPtr<ID3D11ShaderResourceView> m_textureView = nullptr;
-        DrawableAssets assets{};
     };
 }

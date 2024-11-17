@@ -1,4 +1,5 @@
 #pragma once
+
 #include "WinUtil.h"
 
 namespace Spar::Graphics

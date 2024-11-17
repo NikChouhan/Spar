@@ -1,4 +1,6 @@
 #include "Model.h"
+#include "Log.h"
+#include "Texture.h"
 
 namespace Spar
 {
@@ -17,7 +19,7 @@ namespace Spar
     void Model::LoadModel(std::string path)
     {
         cgltf_options options = {};
-        cgltf_data* data = nullptr;
+        cgltf_data *data = nullptr;
         cgltf_result result = cgltf_parse_file(&options, path.c_str(), &data);
 
         if (result != cgltf_result_success)
@@ -33,7 +35,7 @@ namespace Spar
             Log::Error("Failed to load buffers");
         }
 
-        cgltf_scene* scene = data->scene;
+        cgltf_scene *scene = data->scene;
 
         m_dirPath = path.substr(0, path.find_last_of("/"));
 
@@ -52,7 +54,7 @@ namespace Spar
         cgltf_free(data);
     }
 
-    void Model::ProcessMesh(cgltf_mesh* mesh, const cgltf_data* data, std::vector<SimpleVertex>& vertices, std::vector<u32>& indices)
+    void Model::ProcessMesh(cgltf_mesh *mesh, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices)
     {
         for (size_t i = 0; i < mesh->primitives_count; i++)
         {
@@ -60,7 +62,7 @@ namespace Spar
         }
     }
 
-    void Model::ProcessNode(cgltf_node* node, const cgltf_data* data, std::vector<SimpleVertex>& vertices, std::vector<u32>& indices)
+    void Model::ProcessNode(cgltf_node *node, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices)
     {
         if (node->mesh)
         {
@@ -73,74 +75,70 @@ namespace Spar
         }
     }
 
-    void Model::ProcessPrimitive(cgltf_primitive* primitive, const cgltf_data* data, std::vector<SimpleVertex>& vertices, std::vector<u32>& indices)
+    void Model::ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices)
     {
         if (primitive->type != cgltf_primitive_type_triangles)
         {
-            Log::Error("Primitive type is not triangles");
+            Log::Warn("[CGLTF] Primitive type is not triangles");
             return;
         }
 
         if (primitive->indices == nullptr)
         {
-            Log::Error("Primitive has no indices");
+            Log::Error("[CGLTF] Primitive has no indices");
             return;
         }
 
         if (primitive->material == nullptr)
         {
-            Log::Error("Primitive has no material");
+            Log::Error("[CGLTF] Primitive has no material");
             return;
         }
 
         Primitive prim;
 
         // Get attributes
-        cgltf_attribute* pos_attribute = nullptr;
-        cgltf_attribute* uv_attribute = nullptr;
-        cgltf_attribute* norm_attribute = nullptr;
+        cgltf_attribute *pos_attribute = nullptr;
+        cgltf_attribute *tex_attribute = nullptr;
+        cgltf_attribute *norm_attribute = nullptr;
 
         for (int i = 0; i < primitive->attributes_count; i++)
         {
-            if (!strcmp(primitive->attributes[i].name, "POSITION"))
+            if (strcmp(primitive->attributes[i].name, "POSITION") == 0)
             {
                 pos_attribute = &primitive->attributes[i];
             }
-            if (!strcmp(primitive->attributes[i].name, "TEXCOORD_0"))
+            if (!strcmp(primitive->attributes[i].name, "TEXCOORD_0") == 0)
             {
-                uv_attribute = &primitive->attributes[i];
+                tex_attribute = &primitive->attributes[i];
             }
-            if (!strcmp(primitive->attributes[i].name, "NORMAL"))
+            if (!strcmp(primitive->attributes[i].name, "NORMAL") == 0)
             {
                 norm_attribute = &primitive->attributes[i];
             }
         }
-        if (!pos_attribute || !uv_attribute || !norm_attribute)
+        if (!pos_attribute || !tex_attribute || !norm_attribute)
         {
             Log::Warn("[CGLTF] Missing attributes in primitive");
             return;
         }
 
-        // Load vertices
         int vertexCount = pos_attribute->data->count;
         int indexCount = primitive->indices->count;
-
-        std::vector<SimpleVertex> vertices = {};
-        std::vector<uint32_t> indices = {};
 
         for (int i = 0; i < vertexCount; i++)
         {
             SimpleVertex vertex;
 
-            if (!cgltf_accessor_read_float(pos_attribute->data, i, &vertex.Pos.x, 3))
+            if (cgltf_accessor_read_float(pos_attribute->data, i, &vertex.Pos.x, 3) == 0)
             {
                 Log::Warn("[CGLTF] Unable to read Position attributes!");
             }
-            if (!cgltf_accessor_read_float(uv_attribute->data, i, &vertex.Tex.x, 2))
+            if (cgltf_accessor_read_float(tex_attribute->data, i, &vertex.Tex.x, 2) == 0)
             {
                 Log::Warn("[CGLTF] Unable to read Texture attributes!");
             }
-            if (!cgltf_accessor_read_float(norm_attribute->data, i, &vertex.Normal.x, 3))
+            if (cgltf_accessor_read_float(norm_attribute->data, i, &vertex.Normal.x, 3) == 0)
             {
                 Log::Warn("[CGLTF] IUnable to read Normal attributes!");
             }
@@ -156,5 +154,27 @@ namespace Spar
         prim.VertexCount = vertices.size();
         prim.IndexCount = indices.size();
 
+        //material 
+
+        cgltf_material *material = primitive->material;
+        Material mat = {};
+        prim.MaterialIndex = material - data->materials;
+
+        if (material->has_pbr_metallic_roughness)
+        {
+            cgltf_pbr_metallic_roughness *pbr = &material->pbr_metallic_roughness;
+
+            if (pbr->base_color_texture.texture)
+            {
+                cgltf_texture_view *view = &pbr->base_color_texture;
+                cgltf_texture *texture = view->texture;
+
+                std::string texturePath = m_dirPath + "/" + texture->image->uri;
+
+                Texture tex;
+                tex.LoadTexture(texturePath.c_str());
+                //m_textureView = tex.GetTextureView();
+            }
+        }
     };
 };

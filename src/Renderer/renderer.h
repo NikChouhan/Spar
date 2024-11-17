@@ -5,8 +5,8 @@
 #include <string>
 #include <sstream>
 #include "Buffer.h"
-#include "Model.h"	
 
+namespace Spar { class Model; }
 
 namespace Spar::Graphics
 {
@@ -61,6 +61,5 @@ namespace Spar::Graphics
 		wrl::ComPtr<ID3D11VertexShader> m_vertexShader = nullptr;
 		wrl::ComPtr<ID3D11PixelShader> m_pixelShader = nullptr;
 		wrl::ComPtr<ID3D11InputLayout> m_vertexLayout = nullptr;
-		wrl::ComPtr<ID3D11RasterizerState> m_rasterState = nullptr;
 	};
 }

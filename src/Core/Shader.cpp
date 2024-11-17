@@ -1,4 +1,5 @@
 #include "Shader.h"
+#include "renderer.h"
 
 namespace Spar
 {
@@ -48,7 +49,7 @@ namespace Spar
 		return hr;
 	}
 
-	HRESULT Shader::ProcessShaders(std::shared_ptr<Graphics::Renderer> rendererPtr, const WCHAR* vsShaderPath, const WCHAR* psShaderPath)
+	HRESULT Shader::ProcessShaders(std::shared_ptr<Spar::Graphics::Renderer> rendererPtr, const WCHAR* vsShaderPath, const WCHAR* psShaderPath)
 	{
 		assert(rendererPtr->m_device);
 		ID3DBlob* pVSBlob = nullptr;

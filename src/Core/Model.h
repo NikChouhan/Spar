@@ -1,12 +1,10 @@
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include "cgltf.h"
 #include "WinUtil.h"
-#include "DDSTextureLoader.h"
-#include "string"
-#include "Buffer.h"
-#include <vector>
-#include "Log.h"
 
 #define MAX_MESHLET_TRIANGLES 124
 #define MAX_MESHLET_VERTICES 64
@@ -57,6 +55,7 @@ struct Material
     wrl::ComPtr<ID3D11ShaderResourceView> EmissiveView = nullptr;
     wrl::ComPtr<ID3D11ShaderResourceView> AOView = nullptr;
 
+    
 
 
     DirectX::XMFLOAT3 FlatColor;
@@ -106,8 +105,6 @@ namespace Spar
 
         cgltf_data* m_model;
         wrl::ComPtr<ID3D11ShaderResourceView> m_textureView = nullptr;
-
-        DrawableAssets assets{};
 
     private:
         void ProcessNode(cgltf_node* node, const cgltf_data* data, std::vector<SimpleVertex>& vertices, std::vector<u32>& indices);

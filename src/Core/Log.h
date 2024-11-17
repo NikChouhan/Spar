@@ -1,9 +1,7 @@
 #pragma once
 
-#include "WinUtil.h"
 #include <string>
 #include <vector>
-#include <iostream>
 
 namespace Spar
 {

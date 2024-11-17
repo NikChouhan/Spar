@@ -1,3 +1,6 @@
+# Visual Studio Code
+.vscode
+
 # Xmake cache
 .xmake/
 build/
@@ -6,6 +9,3 @@ build/
 .DS_Store
 
 vsxmake2022/
-
-# Visual Studio Code
-.vscode/
