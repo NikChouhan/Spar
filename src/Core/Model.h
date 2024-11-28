@@ -3,12 +3,14 @@
 #include <string>
 #include <vector>
 
+#include "Buffer.h"
 #include "cgltf.h"
 #include "WinUtil.h"
 
 namespace Spar
 {
     class Renderer;
+    class Camera;
 }
 
 enum class TextureType
@@ -25,6 +27,14 @@ struct SimpleVertex
     DirectX::XMFLOAT3 Pos;
     DirectX::XMFLOAT2 Tex;
     DirectX::XMFLOAT3 Normal;
+};
+
+struct MaterialConstants {
+    DirectX::XMFLOAT4 ambientColor;
+    DirectX::XMFLOAT4 diffuseColor;
+    DirectX::XMFLOAT4 specularColor;
+    float specularPower;
+    float padding[3]; // Padding to satisfy 16-byte alignment
 };
 
 struct Material
@@ -53,19 +63,10 @@ struct Material
 
 struct Primitive
 {
-
-    wrl::ComPtr<ID3D11Buffer> vertexBuffer = nullptr;
-    wrl::ComPtr<ID3D11Buffer> indexBuffer = nullptr;
-    wrl::ComPtr<ID3D11SamplerState> samplerState;
-    wrl::ComPtr<ID3D11Buffer> constantBuffer = nullptr;
-
     uint32_t vertexCount = 0;
     uint32_t indexCount = 0;
-
     std::string name = "";
-
     uint32_t materialIndex = 0;
-
     uint32_t startIndex = 0;
     uint32_t startVertex = 0;
 };
@@ -78,10 +79,11 @@ namespace Spar
         Model();
         ~Model();
         void LoadModel(std::shared_ptr<Spar::Renderer> renderer, std::string path);
-
         void SetBuffers();
+        bool SetTexResources();
+        void UpdateCB(std::shared_ptr<Spar::Renderer> renderer, std::shared_ptr<Spar::Camera> camera, static f64 dt);
 
-        void SetTexResources();
+        void Render();
 
     private:
         void ProcessNode(cgltf_node *node, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices);
@@ -89,6 +91,10 @@ namespace Spar
         void ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices);
 
         void LoadMaterialTexture(Material &mat, cgltf_texture_view *view, TextureType type);
+
+        ConstantBuffer cb;
+        MaterialConstants matColor;
+
 
     public:
         u32 vertexOffset = 0;
@@ -103,11 +109,15 @@ namespace Spar
         std::vector<Material> materials;
 
         std::shared_ptr<Spar::Renderer> renderer;
+        std::shared_ptr<Spar::Camera> camera;
 
     private:
         wrl::ComPtr<ID3D11Buffer> m_vertexBuffer;
         wrl::ComPtr<ID3D11Buffer> m_indexBuffer;
+        wrl::ComPtr<ID3D11Buffer> m_constantBuffer;
         UINT m_vertexCount;
         UINT m_indexCount;
+
+        wrl::ComPtr<ID3D11Buffer> m_materialBuffer;
     };
 }

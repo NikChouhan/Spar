@@ -60,6 +60,7 @@ namespace Spar
 
 		if (FAILED(hr1))
 			Log::Error("Failed to create vertex shader");
+		else Log::Info("Compiled the vertex shader");
 
 		D3D11_INPUT_ELEMENT_DESC layout[] =
 		{
@@ -81,6 +82,7 @@ namespace Spar
 
 		if (FAILED(hr2))
 			Log::Error("Failed to create Pixel Shader");
+		else Log::Info("Compiled the Pixel Shader");
 
 		if (hr1 == S_OK && hr2 == S_OK)
 			return S_OK;

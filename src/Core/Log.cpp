@@ -50,13 +50,13 @@ namespace Spar
         switch (level)
         {
         case LogLevel::Info:
-            std::cout << "INFO: " << msg << std::endl;
-            break;
+            std::cout<<"\033[32mINFO: "<<msg<<"\033[0m"<<std::endl;
+        break;
         case LogLevel::Warn:
-            std::cout << "WARN: " << msg << std::endl;
+            std::cout<<"\033[33mWARN: "<<msg<<"\033[0m"<<std::endl;
             break;
         case LogLevel::Error:
-            std::cout << "ERROR: " << msg << std::endl;
+            std::cout<<"\033[31mERROR: "<<msg<<"\033[0m"<<std::endl;
             break;
 
         default:

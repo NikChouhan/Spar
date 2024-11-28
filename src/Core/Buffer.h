@@ -7,7 +7,6 @@ struct ConstantBuffer
     DirectX::XMMATRIX mWorld;
     DirectX::XMMATRIX mView;
     DirectX::XMMATRIX mProjection;
-    DirectX::XMFLOAT4 vMeshColor;
 };
 
 struct DrawableAssets

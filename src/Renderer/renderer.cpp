@@ -18,7 +18,7 @@ void Spar::Renderer::Init()
 	InitD3D11();	
 }
 
-void Spar::Renderer::Submit(Model model)
+void Spar::Renderer::Submit(Model& model)
 {
 	// set the puny things
 	m_context->OMSetDepthStencilState(m_depthStencilState.Get(), 1);
@@ -27,11 +27,19 @@ void Spar::Renderer::Submit(Model model)
 	m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_context->IASetInputLayout(m_vertexLayout.Get());
 
-	model.SetTexResources();
+	// error checking for setting the texresources
+
+	if(!model.SetTexResources())
+	{
+		Log::Error("Failed to set texture resources");
+		return;
+	}
 
 	// Set the shaders
 	m_context->VSSetShader(m_vertexShader.Get(), nullptr, 0);
 	m_context->PSSetShader(m_pixelShader.Get(), nullptr, 0);
+
+	model.Render();
 
 }
 
@@ -43,7 +51,6 @@ void Spar::Renderer::Clear()
 	auto rtv = m_RenderTargetView.Get();
 	m_context->ClearRenderTargetView(rtv, DirectX::Colors::CadetBlue);
 	m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
 }
 
 void Spar::Renderer::Present() const
@@ -81,8 +88,7 @@ void Spar::Renderer::InitWindow()
 			//Update the surface
 			SDL_UpdateWindowSurface(window);
 
-			//Hack to get window to stay up
-			//SDL_Event e; bool quit = false; while (quit == false) { while (SDL_PollEvent(&e)) { if (e.type == SDL_QUIT) quit = true; } }
+			Log::Info("[SDL] Window initialised");
 		}
 	}
 }

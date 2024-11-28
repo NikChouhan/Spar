@@ -2,6 +2,7 @@
 #include "Log.h"
 #include "Texture.h"
 #include "renderer.h"
+#include "Camera.h"
 
 Spar::Model::Model()
 {
@@ -23,35 +24,43 @@ void Spar::Model::LoadModel(std::shared_ptr<Spar::Renderer> renderer, std::strin
     cgltf_result result = cgltf_parse_file(&options, path.c_str(), &data);
 
     if (result != cgltf_result_success)
-    {
-        Log::Error("Failed to parse gltf file");
-    }
+        Log::Error("[CGLTF] Failed to parse gltf file");
+    else
+        Log::Info("[CGLTF] Successfully parsed gltf file");
 
     result = cgltf_load_buffers(&options, data, path.c_str());
 
     if (result != cgltf_result_success)
     {
         cgltf_free(data);
-        Log::Error("Failed to load buffers");
+        Log::Error("[CGLTF] Failed to load buffers");
+    }
+    else
+    {
+        Log::Info("[CGLTF] Successfully loaded buffers");
     }
 
     cgltf_scene *scene = data->scene;
 
     if (!scene)
     {
-        Log::Error("No scene found in gltf file");
+        Log::Error("[CGLTF] No scene found in gltf file");
     }
-
-    m_dirPath = path.substr(0, path.find_last_of("/"));
-
-    for (size_t i = 0; i < scene->nodes_count; i++)
+    else
     {
-        ProcessNode(scene->nodes[i], data, vertices, indices);
+        Log::Info("[CGLTF] Scene found in gltf file");
+        m_dirPath = path.substr(0, path.find_last_of("/"));
+
+        for (size_t i = 0; i < (scene->nodes_count); i++)
+        {
+            ProcessNode(scene->nodes[i], data, vertices, indices);
+        }
+
+        SetBuffers();
+
+        Log::Info("[CGLTF] Successfully loaded gltf file");
     }
 
-    SetBuffers();
-
-    Log::Info("Successfully loaded gltf file");
 
     cgltf_free(data);
 }
@@ -134,7 +143,7 @@ void Spar::Model::ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data 
 
     for (int i = 0; i < vertexCount; i++)
     {
-        SimpleVertex vertex;
+        SimpleVertex vertex = { };
 
         if (cgltf_accessor_read_float(pos_attribute->data, i, &vertex.Pos.x, 3) == 0)
         {
@@ -272,6 +281,30 @@ void Spar::Model::SetBuffers()
     if (FAILED(hr))
         Log::Error("Failed to create index buffer");
 
+    // Set constant buffer
+    D3D11_BUFFER_DESC cbDesc = {};
+    cbDesc.ByteWidth = sizeof(ConstantBuffer);
+    cbDesc.Usage = D3D11_USAGE_DYNAMIC;
+    cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+    hr = renderer->m_device->CreateBuffer(&cbDesc, nullptr, m_constantBuffer.GetAddressOf());
+    if (FAILED(hr))
+        Log::Error("Failed to create world/projection/view matrix constant buffer");
+
+    // Set material constant buffer
+    D3D11_BUFFER_DESC matDesc = {};
+    matDesc.ByteWidth = sizeof(MaterialConstants);
+    matDesc.Usage = D3D11_USAGE_DYNAMIC;
+    matDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    matDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    matDesc.MiscFlags = 0;
+
+    hr = renderer->m_device->CreateBuffer(&matDesc, nullptr, m_materialBuffer.GetAddressOf());
+    if (FAILED(hr))
+        Log::Error("Failed to create material constant buffer");
+
+
     // Store counts
     m_vertexCount = vertices.size();
     m_indexCount = indices.size();
@@ -281,8 +314,10 @@ void Spar::Model::SetBuffers()
     indices.clear();
 }
 
-void Spar::Model::SetTexResources()
+bool Spar::Model::SetTexResources()
 {
+    renderer->m_context->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
+    renderer->m_context->PSSetConstantBuffers(0, 1, m_materialBuffer.GetAddressOf());
     for (auto &mat : materials)
     {
         if (mat.HasAlbedo)
@@ -310,5 +345,57 @@ void Spar::Model::SetTexResources()
             renderer->m_context->PSSetShaderResources(static_cast<UINT>(TextureType::AO), 1, mat.AOView.GetAddressOf());
             renderer->m_context->PSSetSamplers(static_cast<UINT>(TextureType::AO), 1, mat.samplerState.GetAddressOf());
         }
+    }
+
+    return true;
+}
+
+void Spar::Model::UpdateCB(std::shared_ptr<Spar::Renderer> renderer, std::shared_ptr<Spar::Camera> camera, static f64 dt)
+{
+    this->camera = camera;
+    this->renderer = renderer;
+
+    // update word/view/projection matrix
+    cb.mWorld = SM::Matrix::CreateRotationY(dt);
+    cb.mView = camera->GetViewMatrix().Transpose();
+    cb.mProjection = camera->GetProjectionMatrix().Transpose();
+    renderer->m_context->UpdateSubresource(this->m_constantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+
+    // update material color
+    for (auto &mat : materials)
+    {
+        mat.FlatColor = {1.0f, 1.0f, 1.0f};
+    }
+
+    // update material constant buffer
+    matColor.ambientColor = DirectX::XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
+    matColor.diffuseColor = DirectX::XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
+    matColor.specularColor = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+    matColor.specularPower = 32.0f;
+
+    renderer->m_context->UpdateSubresource(this->m_materialBuffer.Get(), 0, nullptr, &matColor, 0, 0);
+
+}
+
+void Spar::Model::Render()
+{
+    // Bind buffers
+    UINT stride = sizeof(SimpleVertex);
+    UINT offset = 0;
+    renderer->m_context->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), &stride, &offset);
+    renderer->m_context->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+
+    // Draw each primitive
+    for (const auto &prim : primitives)
+    {
+        // Set material textures
+        const Material &mat = materials[prim.materialIndex];
+        //SetTexResources();
+
+        // Draw primitive
+        renderer->m_context->DrawIndexed(
+            prim.indexCount,
+            prim.startIndex,
+            0);
     }
 }

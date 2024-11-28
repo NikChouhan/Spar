@@ -16,7 +16,7 @@ namespace Spar
 		Renderer();
 		~Renderer();
 		void Init();
-		void Submit(Model model);
+		void Submit(Model& model);
 		void Clear();
 		void Present() const;
 
