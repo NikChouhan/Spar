@@ -9,11 +9,6 @@ struct ConstantBuffer
     DirectX::XMMATRIX mProjection;
 };
 
-struct DrawableAssets
-{
-    wrl::ComPtr<ID3D11Buffer> vertexBuffer;
-    wrl::ComPtr<ID3D11Buffer> indexBuffer;
-};
 
 struct VertexBuffer
 {

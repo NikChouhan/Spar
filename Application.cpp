@@ -1,3 +1,7 @@
+#include "imgui.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_dx11.h"
+
 #include "Application.h"
 #include "renderer.h"
 #include "Camera.h"
@@ -7,6 +11,7 @@ Spar::Application::Application()
 {
     m_renderer = std::make_shared<Renderer>();
     m_camera = std::make_shared<Camera>();
+    io = nullptr;
 }
 
 Spar::Application::~Application()
@@ -41,6 +46,22 @@ void Spar::Application::Init()
 	m_renderer->m_device->CreateRasterizerState(&rasterDesc, m_rasterState.GetAddressOf());
     m_renderer->m_context->RSSetState(m_rasterState.Get());
     m_view = m_camera->GetViewMatrix().Transpose();
+
+    //Imgui setup
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+
+    io = &ImGui::GetIO();
+
+    io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io->ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
+    io->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplSDL2_InitForD3D(m_renderer->window);
+    ImGui_ImplDX11_Init(m_renderer->m_device.Get(), m_renderer->m_context.Get());
 }
 
 void Spar::Application::Run()
@@ -53,6 +74,7 @@ void Spar::Application::Run()
         // Handle events
         while (SDL_PollEvent(&e))
         {
+            ImGui_ImplSDL2_ProcessEvent(&e);
             if (e.type == SDL_QUIT)
                 quit = true;
         }
@@ -83,6 +105,8 @@ void Spar::Application::Render()
 {
     m_renderer->Clear();
 
+    EditorMenu();
+
     models.push_back(suzanne);
 
     for (auto& model : models)
@@ -101,5 +125,31 @@ void Spar::Application::Resize()
 
 void Spar::Application::ShutDown()
 {
+    ImGui_ImplDX11_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    ImGui::DestroyContext();
+}
+
+void Spar::Application::EditorMenu()
+{
+    // Start the Dear ImGui frame
+    ImGui_ImplDX11_NewFrame();
+    ImGui_ImplSDL2_NewFrame();
+    ImGui::NewFrame();
+
+    // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+    if (true)
+        ImGui::ShowDemoWindow();
+    
+    ImGui::Render();
+
+    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+    
+    // Update and Render additional Platform Windows
+    if (io->ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        ImGui::UpdatePlatformWindows();
+        ImGui::RenderPlatformWindowsDefault();
+    }
 
 }

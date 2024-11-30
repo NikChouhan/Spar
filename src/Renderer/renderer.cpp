@@ -83,7 +83,7 @@ void Spar::Renderer::InitWindow()
 			screenSurface = SDL_GetWindowSurface(window);
 
 			//Fill the surface white
-			SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format, 255, 255, 255));
+			SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format, 0, 255, 255));
 
 			//Update the surface
 			SDL_UpdateWindowSurface(window);
@@ -229,7 +229,12 @@ void Spar::Renderer::CreateRenderTargetView()
 		Log::Error("Failed to get back buffer for rtv");
 	}
 
-	m_device->CreateRenderTargetView(backBuffer, 0, m_RenderTargetView.GetAddressOf());
+	if (!backBuffer)
+	{
+		Log::Error("No backbuffer");
+	}
+	else
+		m_device->CreateRenderTargetView(backBuffer, 0, m_RenderTargetView.GetAddressOf());
 
 	if(FAILED(hr))
 	{

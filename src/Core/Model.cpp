@@ -61,7 +61,6 @@ void Spar::Model::LoadModel(std::shared_ptr<Spar::Renderer> renderer, std::strin
         Log::Info("[CGLTF] Successfully loaded gltf file");
     }
 
-
     cgltf_free(data);
 }
 
@@ -304,6 +303,13 @@ void Spar::Model::SetBuffers()
     if (FAILED(hr))
         Log::Error("Failed to create material constant buffer");
 
+    Log::Info("[CGLTF] no of vertices in model: ");
+    auto v = std::to_string(vertices.size());
+    Log::Info(v);
+
+    Log::Info("[CGLTF] no of indices in model: ");
+    auto ind = std::to_string(indices.size());
+    Log::Info(ind);
 
     // Store counts
     m_vertexCount = vertices.size();
@@ -390,12 +396,7 @@ void Spar::Model::Render()
     {
         // Set material textures
         const Material &mat = materials[prim.materialIndex];
-        //SetTexResources();
-
         // Draw primitive
-        renderer->m_context->DrawIndexed(
-            prim.indexCount,
-            prim.startIndex,
-            0);
+        renderer->m_context->DrawIndexed(prim.indexCount, prim.startIndex, 0);
     }
 }

@@ -13,6 +13,7 @@ namespace Spar
 	class Camera;
 	class Renderer;
 }
+struct ImGuiIO;
 
 namespace Spar
 {
@@ -29,6 +30,7 @@ namespace Spar
 		void Resize();
 		void Render();
 		void ShutDown();
+		void EditorMenu();
 	public:
 		//public member variables
 
@@ -53,6 +55,6 @@ namespace Spar
 		wrl::ComPtr<ID3D11Buffer> m_constantBuffer = nullptr;
 
 		DirectX::XMFLOAT4 m_meshColor = DirectX::XMFLOAT4(0.7f, .7f, .7f, 1.f);
-
+		ImGuiIO* io;
 	};
 }
