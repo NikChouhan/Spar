@@ -35,4 +35,6 @@ float4 PSMain(PS_INPUT input) : SV_Target
     finalColor.a = texColor.a;
     
     return finalColor;
+
+    //return float4(0.8f, 0.8f, 0.8f, 1.0f);
 }

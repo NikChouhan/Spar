@@ -26,14 +26,16 @@ void Spar::Application::Init()
     Log::Init();
     //camera setup
     m_camera->InitAsPerspective(90, m_renderer->m_width, m_renderer->m_height);
-    m_camera->SetPosition({ 0.0f, 0.0f, -2.8f });
+    m_camera->SetPosition({ 0.0f, 0.0f, -5.f });
     //shader stuff
     Shader shader;
     const WCHAR* vsShaderPath = L"../../../../assets/shaders/Model/ModelVS.hlsl";
     const WCHAR* psshaderPath = L"../../../../assets/shaders/Model/ModelPS.hlsl";
     shader.ProcessShaders(m_renderer, vsShaderPath, psshaderPath);
     // Load model
-    suzanne.LoadModel(m_renderer, "../../../../assets/models/Suzanne/glTF/Suzanne.gltf");
+    //suzanne.LoadModel(m_renderer, "../../../../assets/models/Cube/cube.glb");
+    suzanne.LoadModel(m_renderer, "../../../../assets/models/Suzanne/glTF/Suzanne.glTF");
+
     // Initialize the world matrix
     m_world = DirectX::XMMatrixIdentity();
     // Initialize the view matrix
@@ -43,7 +45,7 @@ void Spar::Application::Init()
 	rasterDesc.FrontCounterClockwise = false;
 	rasterDesc.DepthClipEnable = true;
 	// Create the rasterizer state object
-	m_renderer->m_device->CreateRasterizerState(&rasterDesc, m_rasterState.GetAddressOf());
+	m_renderer->m_device->CreateRasterizerState(&rasterDesc, m_rasterState.GetAddressOf()); 
     m_renderer->m_context->RSSetState(m_rasterState.Get());
     m_view = m_camera->GetViewMatrix().Transpose();
 

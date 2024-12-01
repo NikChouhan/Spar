@@ -324,6 +324,7 @@ bool Spar::Model::SetTexResources()
 {
     renderer->m_context->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
     renderer->m_context->PSSetConstantBuffers(0, 1, m_materialBuffer.GetAddressOf());
+    renderer->m_context->PSSetShader(renderer->m_pixelShader.Get(), nullptr, 0);
     for (auto &mat : materials)
     {
         if (mat.HasAlbedo)

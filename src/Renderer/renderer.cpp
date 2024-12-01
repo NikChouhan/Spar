@@ -27,6 +27,9 @@ void Spar::Renderer::Submit(Model& model)
 	m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_context->IASetInputLayout(m_vertexLayout.Get());
 
+	//set vs shader
+	m_context->VSSetShader(m_vertexShader.Get(), nullptr, 0);
+
 	// error checking for setting the texresources
 
 	if(!model.SetTexResources())
@@ -34,10 +37,6 @@ void Spar::Renderer::Submit(Model& model)
 		Log::Error("Failed to set texture resources");
 		return;
 	}
-
-	// Set the shaders
-	m_context->VSSetShader(m_vertexShader.Get(), nullptr, 0);
-	m_context->PSSetShader(m_pixelShader.Get(), nullptr, 0);
 
 	model.Render();
 
@@ -49,7 +48,7 @@ void Spar::Renderer::Clear()
 	assert(m_SwapChain);
 	SetViewPort();
 	auto rtv = m_RenderTargetView.Get();
-	m_context->ClearRenderTargetView(rtv, DirectX::Colors::CadetBlue);
+	m_context->ClearRenderTargetView(rtv, DirectX::Colors::DarkBlue);
 	m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 }
 
@@ -127,7 +126,7 @@ void Spar::Renderer::CreateDevice()
 
 void Spar::Renderer::CheckMSAAQualityLevel()
 {
-	m_device->CheckMultisampleQualityLevels(DXGI_FORMAT_B8G8R8A8_UNORM, 4, &m_m4xMsaaQuality);
+	m_device->CheckMultisampleQualityLevels(DXGI_FORMAT_R8G8B8A8_UNORM, 4, &m_m4xMsaaQuality);
 	m_enableMSAA = true;
 }
 
@@ -138,7 +137,7 @@ void Spar::Renderer::CreateSwapChain()
 	sd.BufferDesc.Height = m_height;
 	sd.BufferDesc.RefreshRate.Numerator = 60;
 	sd.BufferDesc.RefreshRate.Denominator = 1;
-	sd.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 	sd.Windowed = TRUE;
 
