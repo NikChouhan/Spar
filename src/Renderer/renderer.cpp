@@ -95,7 +95,7 @@ void Spar::Renderer::InitWindow()
 void Spar::Renderer::InitD3D11()
 {
 	CreateDevice();
-	CheckMSAAQualityLevel();
+	//CheckMSAAQualityLevel();
 	CreateSwapChain();
 	CreateRenderTargetView();
 	CreateDepthStencilView();
@@ -114,20 +114,17 @@ void Spar::Renderer::CreateDevice()
 
 	HRESULT hr = D3D11CreateDevice(0, D3D_DRIVER_TYPE_HARDWARE, 0, createDeviceFlags, 0, 0, D3D11_SDK_VERSION, m_device.GetAddressOf(), &m_featureLevel, m_context.GetAddressOf());
 
-	if(FAILED(hr))
+	if (FAILED(hr))
 	{
 		Log::Error("Failed to create D3D11 device");
 	}
+	else
+		Log::Info("[D3D] Device created");
+
 	if (m_featureLevel != D3D_FEATURE_LEVEL_11_0)
 	{
 		MessageBox(0, L"Direct3D Feature Level 11 unsupported.", 0, 0);
 	}
-}
-
-void Spar::Renderer::CheckMSAAQualityLevel()
-{
-	m_device->CheckMultisampleQualityLevels(DXGI_FORMAT_R8G8B8A8_UNORM, 4, &m_m4xMsaaQuality);
-	m_enableMSAA = true;
 }
 
 void Spar::Renderer::CreateSwapChain()
@@ -183,35 +180,14 @@ void Spar::Renderer::CreateSwapChain()
 		Log::Error("Failed to get DXGI factory");
 	}
 
-	//enumerating devices for fun
-
-	UINT i = 0;
-	IDXGIAdapter* pAdapter;
-	std::vector<IDXGIAdapter*> vAdapters;
-	std::wstringstream debugOutput;
-
-	debugOutput << L"Enumerating adapters:\n";
-	OutputDebugString(L"Total adapters found: ");
-
-	while (dxgiFactory->EnumAdapters(i, &pAdapter) != DXGI_ERROR_NOT_FOUND)
-	{
-		DXGI_ADAPTER_DESC adapterDesc;
-		pAdapter->GetDesc(&adapterDesc);
-
-		debugOutput << L"Adapter " << i << L": " << adapterDesc.Description << L"\n";
-		OutputDebugString(adapterDesc.Description);
-
-		vAdapters.push_back(pAdapter);
-		++i;
-	}
-
-
 	dxgiFactory->CreateSwapChain(m_device.Get(), &sd, m_SwapChain.GetAddressOf());
 
-	if(FAILED(hr))
+	if (FAILED(hr))
 	{
 		Log::Error("Failed to create swap chain");
 	}
+	else
+		Log::Info("[D3D] Swapchain initialised");
 
 	ReleaseCOM(dxgiDevice);
 	ReleaseCOM(dxgiAdapter);
@@ -223,9 +199,10 @@ void Spar::Renderer::CreateRenderTargetView()
 {
 	ID3D11Texture2D* backBuffer = nullptr;
 	HRESULT hr = m_SwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**> (&backBuffer));
-	if(FAILED(hr))
+	if (FAILED(hr))
 	{
 		Log::Error("Failed to get back buffer for rtv");
+		return;
 	}
 
 	if (!backBuffer)
@@ -233,15 +210,20 @@ void Spar::Renderer::CreateRenderTargetView()
 		Log::Error("No backbuffer");
 	}
 	else
-		m_device->CreateRenderTargetView(backBuffer, 0, m_RenderTargetView.GetAddressOf());
-
-	if(FAILED(hr))
 	{
-		Log::Error("Failed to create render target view");
-	}
+		hr = m_device->CreateRenderTargetView(backBuffer, 0, m_RenderTargetView.GetAddressOf());
+
+		if (FAILED(hr))
+		{
+			Log::Error("Failed to create render target view");
+		}
+		else
+		{
+			Log::Info("[D3D] Render Target View created");
+		}
+	}	
 
 	ReleaseCOM(backBuffer);
-
 }
 
 void Spar::Renderer::CreateDepthStencilView()
@@ -294,15 +276,15 @@ void Spar::Renderer::CreateDepthStencilView()
 
 	hr = m_device->CreateDepthStencilView(m_depthStencilBuffer.Get(), 0, m_depthStencilView.GetAddressOf());
 
-	if(FAILED(hr))
+	if (FAILED(hr))
 	{
 		Log::Error("Failed to create depth stencil view");
 	}
+	else Log::Info("[D3D] Depth Stencil View created");
 
 	//add to immediate context
 
 	m_context->OMSetRenderTargets(1, m_RenderTargetView.GetAddressOf(), m_depthStencilView.Get());
-
 }
 
 void Spar::Renderer::SetViewPort() const

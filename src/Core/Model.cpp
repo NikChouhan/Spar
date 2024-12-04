@@ -3,6 +3,7 @@
 #include "Texture.h"
 #include "renderer.h"
 #include "Camera.h"
+#include <unordered_set>
 
 Spar::Model::Model()
 {
@@ -142,7 +143,7 @@ void Spar::Model::ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data 
 
     for (int i = 0; i < vertexCount; i++)
     {
-        SimpleVertex vertex = { };
+        SimpleVertex vertex = {};
 
         if (cgltf_accessor_read_float(pos_attribute->data, i, &vertex.Pos.x, 3) == 0)
         {
@@ -154,7 +155,7 @@ void Spar::Model::ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data 
         }
         if (cgltf_accessor_read_float(norm_attribute->data, i, &vertex.Normal.x, 3) == 0)
         {
-            Log::Warn("[CGLTF] IUnable to read Normal attributes!");
+            Log::Warn("[CGLTF] Unable to read Normal attributes!");
         }
 
         vertices.push_back(vertex);
@@ -167,48 +168,80 @@ void Spar::Model::ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data 
 
     // material
 
-    cgltf_material *material = primitive->material;
+   // material
+
+    cgltf_material* material = primitive->material;
     Material mat = {};
     prim.materialIndex = material - data->materials;
 
+    HRESULT hr = E_FAIL;
+
+    // map texture types to their respective textures (now using cgltf_texture_view*)
+    std::unordered_map<TextureType, cgltf_texture_view*> textureMap;
+    std::unordered_set<std::string> loadedTextures; // To track loaded textures
+
     if (material->has_pbr_metallic_roughness)
     {
-        cgltf_pbr_metallic_roughness *pbr = &material->pbr_metallic_roughness;
-        // Load base color (albedo) texture
-        LoadMaterialTexture(mat, &pbr->base_color_texture, TextureType::ALBEDO);
-        // Load metallic-roughness texture
-        LoadMaterialTexture(mat, &pbr->metallic_roughness_texture, TextureType::METALLIC_ROUGHNESS);
+        cgltf_pbr_metallic_roughness* pbr = &material->pbr_metallic_roughness;
+        // Map base color texture (albedo)
+        textureMap[TextureType::ALBEDO] = &pbr->base_color_texture;
+        // Map metallic-roughness texture
+        textureMap[TextureType::METALLIC_ROUGHNESS] = &pbr->metallic_roughness_texture;
     }
 
     if (material->normal_texture.texture)
     {
-        // Load normal texture
-        LoadMaterialTexture(mat, &material->normal_texture, TextureType::NORMAL);
+        // Map normal texture
+        textureMap[TextureType::NORMAL] = &material->normal_texture;
     }
 
     if (material->emissive_texture.texture)
     {
-        // Load emissive texture
-        LoadMaterialTexture(mat, &material->emissive_texture, TextureType::EMISSIVE);
+        // Map emissive texture
+        textureMap[TextureType::EMISSIVE] = &material->emissive_texture;
     }
 
     if (material->occlusion_texture.texture)
     {
-        // Load occlusion texture
-        LoadMaterialTexture(mat, &material->occlusion_texture, TextureType::AO);
+        // Map occlusion texture
+        textureMap[TextureType::AO] = &material->occlusion_texture;
+    }
+
+    // Load all textures from the map if they haven't been loaded before
+    for (const auto& pair : textureMap)
+    {
+        std::string textureIdentifier = std::to_string(static_cast<int>(pair.first)); // Unique identifier for texture type
+
+        if (loadedTextures.find(textureIdentifier) == loadedTextures.end()) // If not already loaded
+        {
+            hr = LoadMaterialTexture(mat, pair.second, pair.first);
+            if (FAILED(hr))
+            {
+                Log::Error("[Texture] Failed to load texture of type " + textureIdentifier);
+            }
+            else
+            {
+                Log::Info("[Texture] Loaded texture of type " + textureIdentifier);
+                loadedTextures.insert(textureIdentifier); // Mark this texture type as loaded
+            }
+        }
+        else
+        {
+            Log::Info("[Texture] Skipping already loaded texture of type " + textureIdentifier);
+        }
     }
 
     prim.startIndex = indexOffset;
     prim.startVertex = vertexOffset;
-    prim.vertexCount = vertices.size() - vertexOffset;
-    prim.indexCount = indices.size() - indexOffset;
+    prim.vertexCount = vertices.size();
+    prim.indexCount = indices.size();
 
     prim.materialIndex = materials.size();
     materials.push_back(mat);
     primitives.push_back(prim);
 }
 
-void Spar::Model::LoadMaterialTexture(Material &mat, cgltf_texture_view *textureView, TextureType type)
+HRESULT Spar::Model::LoadMaterialTexture(Material &mat, cgltf_texture_view *textureView, TextureType type)
 {
     if (textureView && textureView->texture && textureView->texture->image)
     {
@@ -223,32 +256,38 @@ void Spar::Model::LoadMaterialTexture(Material &mat, cgltf_texture_view *texture
         case TextureType::ALBEDO:
             mat.AlbedoView = tex.m_textureView;
             mat.HasAlbedo = true;
-            break;
+            mat.AlbedoPath = path;
+            return S_OK;
         case TextureType::NORMAL:
             mat.NormalView = tex.m_textureView;
             mat.HasNormal = true;
-            break;
+            mat.NormalPath = path;
+            return S_OK;
         case TextureType::METALLIC_ROUGHNESS:
             mat.MetallicRoughnessView = tex.m_textureView;
             mat.HasMetallicRoughness = true;
-            break;
+            mat.MetallicRoughnessPath = path;
+            return S_OK;
         case TextureType::EMISSIVE:
             mat.EmissiveView = tex.m_textureView;
             mat.HasEmissive = true;
-            break;
+            mat.EmissivePath = path;
+            return S_OK;
         case TextureType::AO:
             mat.AOView = tex.m_textureView;
             mat.HasAO = true;
-            break;
+            mat.AOPath = path;
+            return S_OK;
         default:
             Log::Warn("Unknown texture type.");
-            break;
+            return E_FAIL;
         }
     }
     else
     {
         // Handle missing texture or image
         Log::Warn("Texture or image not found for this material.");
+        return E_FAIL;
     }
 }
 
@@ -279,6 +318,24 @@ void Spar::Model::SetBuffers()
     hr = renderer->m_device->CreateBuffer(&ibDesc, &ibData, m_indexBuffer.GetAddressOf());
     if (FAILED(hr))
         Log::Error("Failed to create index buffer");
+
+    // create sampler state;
+    D3D11_SAMPLER_DESC samplerDesc = {};
+    samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR; // Linear filtering
+    samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;    // Wrap texture coordinates in U
+    samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;    // Wrap texture coordinates in V
+    samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;    // Wrap texture coordinates in W
+    samplerDesc.MipLODBias = 0.0f;
+    samplerDesc.MaxAnisotropy = 1;                        // Default anisotropy level
+    samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS; // Always pass comparison
+    samplerDesc.BorderColor[0] = 0.0f;                    // Border color (not used with WRAP)
+    samplerDesc.BorderColor[1] = 0.0f;
+    samplerDesc.BorderColor[2] = 0.0f;
+    samplerDesc.BorderColor[3] = 0.0f;
+    samplerDesc.MinLOD = 0; // Minimum mip level
+    samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+    hr = renderer->m_device->CreateSamplerState(&samplerDesc, m_samplerState.GetAddressOf());
 
     // Set constant buffer
     D3D11_BUFFER_DESC cbDesc = {};
@@ -316,8 +373,8 @@ void Spar::Model::SetBuffers()
     m_indexCount = indices.size();
 
     // Clear CPU data
-    vertices.clear();
-    indices.clear();
+    /*vertices.clear();
+    indices.clear();*/
 }
 
 bool Spar::Model::SetTexResources()
@@ -325,32 +382,30 @@ bool Spar::Model::SetTexResources()
     renderer->m_context->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
     renderer->m_context->PSSetConstantBuffers(0, 1, m_materialBuffer.GetAddressOf());
     renderer->m_context->PSSetShader(renderer->m_pixelShader.Get(), nullptr, 0);
+
+    renderer->m_context->PSSetSamplers(0, 1, m_samplerState.GetAddressOf());
+
     for (auto &mat : materials)
     {
         if (mat.HasAlbedo)
         {
-            renderer->m_context->PSSetShaderResources(static_cast<UINT>(TextureType::ALBEDO), 1, mat.AlbedoView.GetAddressOf());
-            renderer->m_context->PSSetSamplers(static_cast<UINT>(TextureType::ALBEDO), 1, mat.samplerState.GetAddressOf());
+            renderer->m_context->   PSSetShaderResources(static_cast<UINT>(TextureType::ALBEDO), 1, mat.AlbedoView.GetAddressOf());
         }
         if (mat.HasNormal)
         {
             renderer->m_context->PSSetShaderResources(static_cast<UINT>(TextureType::NORMAL), 1, mat.NormalView.GetAddressOf());
-            renderer->m_context->PSSetSamplers(static_cast<UINT>(TextureType::NORMAL), 1, mat.samplerState.GetAddressOf());
         }
         if (mat.HasMetallicRoughness)
         {
             renderer->m_context->PSSetShaderResources(static_cast<UINT>(TextureType::METALLIC_ROUGHNESS), 1, mat.MetallicRoughnessView.GetAddressOf());
-            renderer->m_context->PSSetSamplers(static_cast<UINT>(TextureType::METALLIC_ROUGHNESS), 1, mat.samplerState.GetAddressOf());
         }
         if (mat.HasEmissive)
         {
             renderer->m_context->PSSetShaderResources(static_cast<UINT>(TextureType::EMISSIVE), 1, mat.EmissiveView.GetAddressOf());
-            renderer->m_context->PSSetSamplers(static_cast<UINT>(TextureType::EMISSIVE), 1, mat.samplerState.GetAddressOf());
         }
         if (mat.HasAO)
         {
             renderer->m_context->PSSetShaderResources(static_cast<UINT>(TextureType::AO), 1, mat.AOView.GetAddressOf());
-            renderer->m_context->PSSetSamplers(static_cast<UINT>(TextureType::AO), 1, mat.samplerState.GetAddressOf());
         }
     }
 
@@ -381,7 +436,6 @@ void Spar::Model::UpdateCB(std::shared_ptr<Spar::Renderer> renderer, std::shared
     matColor.specularPower = 32.0f;
 
     renderer->m_context->UpdateSubresource(this->m_materialBuffer.Get(), 0, nullptr, &matColor, 0, 0);
-
 }
 
 void Spar::Model::Render()

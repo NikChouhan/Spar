@@ -21,12 +21,11 @@ Spar::Application::~Application()
 
 void Spar::Application::Init()
 {
-    m_renderer->Init();
-
     Log::Init();
+    m_renderer->Init();
     //camera setup
-    m_camera->InitAsPerspective(90, m_renderer->m_width, m_renderer->m_height);
-    m_camera->SetPosition({ 0.0f, 0.0f, -5.f });
+    m_camera->InitAsPerspective(45.0f, m_renderer->m_width, m_renderer->m_height);
+    m_camera->SetPosition({ 0.0f, 0.0f, 5.f });
     //shader stuff
     Shader shader;
     const WCHAR* vsShaderPath = L"../../../../assets/shaders/Model/ModelVS.hlsl";
@@ -34,7 +33,12 @@ void Spar::Application::Init()
     shader.ProcessShaders(m_renderer, vsShaderPath, psshaderPath);
     // Load model
     //suzanne.LoadModel(m_renderer, "../../../../assets/models/Cube/cube.glb");
+    //suzanne.LoadModel(m_renderer, "../../../../assets/models/Sponza/glTF/Sponza.glTF");
     suzanne.LoadModel(m_renderer, "../../../../assets/models/Suzanne/glTF/Suzanne.glTF");
+
+
+    models.push_back(suzanne);
+
 
     // Initialize the world matrix
     m_world = DirectX::XMMatrixIdentity();
@@ -58,7 +62,7 @@ void Spar::Application::Init()
     io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     io->ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
     io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
-    io->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+    //io->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
     ImGui::StyleColorsDark();
 
@@ -100,7 +104,7 @@ void Spar::Application::Update(float dt)
     static f64 angle = 0.0f;
     angle += dt;
 
-    suzanne.UpdateCB(m_renderer, m_camera, angle);
+    suzanne.UpdateCB(m_renderer, m_camera, dt);
 }
 
 void Spar::Application::Render()
@@ -108,8 +112,6 @@ void Spar::Application::Render()
     m_renderer->Clear();
 
     EditorMenu();
-
-    models.push_back(suzanne);
 
     for (auto& model : models)
     {

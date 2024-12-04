@@ -57,7 +57,6 @@ struct Material
     wrl::ComPtr<ID3D11ShaderResourceView> EmissiveView = nullptr;
     wrl::ComPtr<ID3D11ShaderResourceView> AOView = nullptr;
 
-    wrl::ComPtr<ID3D11SamplerState> samplerState;
     DirectX::XMFLOAT3 FlatColor;
 };
 
@@ -90,7 +89,7 @@ namespace Spar
         void ProcessMesh(cgltf_mesh *mesh, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices);
         void ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices);
 
-        void LoadMaterialTexture(Material &mat, cgltf_texture_view *view, TextureType type);
+        HRESULT LoadMaterialTexture(Material &mat, cgltf_texture_view *view, TextureType type);
 
         ConstantBuffer cb;
         MaterialConstants matColor;
@@ -119,5 +118,6 @@ namespace Spar
         UINT m_indexCount;
 
         wrl::ComPtr<ID3D11Buffer> m_materialBuffer;
+        wrl::ComPtr<ID3D11SamplerState> m_samplerState = nullptr;
     };
 }

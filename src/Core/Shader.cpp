@@ -59,8 +59,8 @@ namespace Spar
 		HRESULT hr1 = rendererPtr->m_device->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, rendererPtr->m_vertexShader.GetAddressOf());
 
 		if (FAILED(hr1))
-			Log::Error("Failed to create vertex shader");
-		else Log::Info("Compiled the vertex shader");
+			Log::Error("[Shader] Failed to create vertex shader");
+		else Log::Info("[Shader] Compiled the vertex shader");
 
 		D3D11_INPUT_ELEMENT_DESC layout[] =
 		{
@@ -81,8 +81,8 @@ namespace Spar
 		HRESULT hr2 = rendererPtr->m_device->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, rendererPtr->m_pixelShader.GetAddressOf());
 
 		if (FAILED(hr2))
-			Log::Error("Failed to create Pixel Shader");
-		else Log::Info("Compiled the Pixel Shader");
+			Log::Error("[Shader] Failed to create Pixel Shader");
+		else Log::Info("[Shader] Compiled the Pixel Shader");
 
 		if (hr1 == S_OK && hr2 == S_OK)
 			return S_OK;
