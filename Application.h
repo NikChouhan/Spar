@@ -6,7 +6,7 @@
 #include <sstream>
 #include "Shader.h"
 #include "Buffer.h"
-#include "Model.h"
+//#include "Model.h"
 
 namespace Spar
 {
@@ -20,7 +20,6 @@ namespace Spar
 	class Application
 	{
 	public:
-
 		Application();
 		~Application();
 
@@ -31,18 +30,14 @@ namespace Spar
 		void Render();
 		void ShutDown();
 		void EditorMenu();
+
 	public:
-		//public member variables
+		// public member variables
 
 		std::shared_ptr<Renderer> m_renderer;
 		std::shared_ptr<Camera> m_camera;
 
 		wrl::ComPtr<ID3D11RasterizerState> m_rasterState = nullptr;
-
-
-		Model suzanne = {};
-
-		std::vector<Model> models{};
 
 	private:
 		wrl::ComPtr<ID3D11ShaderResourceView> m_textureView = nullptr;
@@ -55,6 +50,9 @@ namespace Spar
 		wrl::ComPtr<ID3D11Buffer> m_constantBuffer = nullptr;
 
 		DirectX::XMFLOAT4 m_meshColor = DirectX::XMFLOAT4(0.7f, .7f, .7f, 1.f);
-		ImGuiIO* io;
+		ImGuiIO *io;
+		
+		void ProcessInput(const SDL_Event &e);
+		float m_cameraSpeed = 5.0f;
 	};
 }

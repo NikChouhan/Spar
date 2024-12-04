@@ -25,7 +25,7 @@ void Spar::Application::Init()
     m_renderer->Init();
     //camera setup
     m_camera->InitAsPerspective(45.0f, m_renderer->m_width, m_renderer->m_height);
-    m_camera->SetPosition({ 0.0f, 0.0f, 5.f });
+    m_camera->SetPosition({ 0.0f, 0.0f, -5.f });
     //shader stuff
     Shader shader;
     const WCHAR* vsShaderPath = L"../../../../assets/shaders/Model/ModelVS.hlsl";
@@ -34,10 +34,10 @@ void Spar::Application::Init()
     // Load model
     //suzanne.LoadModel(m_renderer, "../../../../assets/models/Cube/cube.glb");
     //suzanne.LoadModel(m_renderer, "../../../../assets/models/Sponza/glTF/Sponza.glTF");
-    suzanne.LoadModel(m_renderer, "../../../../assets/models/Suzanne/glTF/Suzanne.glTF");
+    //suzanne.LoadModel(m_renderer, "../../../../assets/models/Suzanne/glTF/Suzanne.glTF");
 
 
-    models.push_back(suzanne);
+    //models.push_back(suzanne);
 
 
     // Initialize the world matrix
@@ -83,6 +83,8 @@ void Spar::Application::Run()
             ImGui_ImplSDL2_ProcessEvent(&e);
             if (e.type == SDL_QUIT)
                 quit = true;
+
+            ProcessInput(e);
         }
 
         // Calculate delta time
@@ -104,7 +106,7 @@ void Spar::Application::Update(float dt)
     static f64 angle = 0.0f;
     angle += dt;
 
-    suzanne.UpdateCB(m_renderer, m_camera, dt);
+    //suzanne.UpdateCB(m_renderer, m_camera, dt);
 }
 
 void Spar::Application::Render()
@@ -113,10 +115,10 @@ void Spar::Application::Render()
 
     EditorMenu();
 
-    for (auto& model : models)
-    {
-        m_renderer->Submit(model);
-    }
+    // for (auto& model : models)
+    // {
+    //     m_renderer->Submit(model);
+    // }
 
     m_renderer->Present();
 
@@ -156,4 +158,38 @@ void Spar::Application::EditorMenu()
         ImGui::RenderPlatformWindowsDefault();
     }
 
+}
+
+void Spar::Application::ProcessInput(const SDL_Event& e)
+{
+    if (e.type == SDL_KEYDOWN)
+    {
+        switch (e.key.keysym.sym)
+        {
+            case SDLK_w:
+                m_camera->SetPosition(m_camera->GetPosition() + SM::Vector3(0, 0, m_cameraSpeed * 0.016f));
+                Log::Info("W entered");
+                break;
+            case SDLK_s:
+                m_camera->SetPosition(m_camera->GetPosition() + SM::Vector3(0, 0, -m_cameraSpeed * 0.016f));
+                break;
+            case SDLK_a:
+                m_camera->SetPosition(m_camera->GetPosition() + SM::Vector3(-m_cameraSpeed * 0.016f, 0, 0));
+                break;
+            case SDLK_d:
+                m_camera->SetPosition(m_camera->GetPosition() + SM::Vector3(m_cameraSpeed * 0.016f, 0, 0));
+                break;
+            case SDLK_q:
+                m_camera->SetPosition(m_camera->GetPosition() + SM::Vector3(0, m_cameraSpeed * 0.016f, 0));
+                break;
+            case SDLK_e:
+                m_camera->SetPosition(m_camera->GetPosition() + SM::Vector3(0, -m_cameraSpeed * 0.016f, 0));
+                break;
+            case SDLK_ESCAPE:
+                SDL_Event quitEvent;
+                quitEvent.type = SDL_QUIT;
+                SDL_PushEvent(&quitEvent);
+                break;
+        }
+    }
 }

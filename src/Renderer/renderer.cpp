@@ -32,13 +32,9 @@ void Spar::Renderer::Submit(Model& model)
 
 	// error checking for setting the texresources
 
-	if(!model.SetTexResources())
-	{
-		Log::Error("Failed to set texture resources");
-		return;
-	}
+	
 
-	model.Render();
+	//model.Render();
 
 }
 
@@ -48,7 +44,7 @@ void Spar::Renderer::Clear()
 	assert(m_SwapChain);
 	SetViewPort();
 	auto rtv = m_RenderTargetView.Get();
-	m_context->ClearRenderTargetView(rtv, DirectX::Colors::DarkBlue);
+	m_context->ClearRenderTargetView(rtv, DirectX::Colors::Orange);
 	m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 }
 

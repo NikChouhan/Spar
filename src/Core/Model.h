@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "Buffer.h"
-#include "cgltf.h"
 #include "WinUtil.h"
 
 namespace Spar
@@ -21,6 +20,15 @@ enum class TextureType
     EMISSIVE,
     AO
 };
+
+struct ConstantBuffer
+{
+    // DirectX::XMMATRIX mWorld;
+    // DirectX::XMMATRIX mView;
+    // DirectX::XMMATRIX mProjection;
+    DirectX::XMMATRIX mWorldViewProj;
+};
+
 
 struct SimpleVertex
 {
@@ -85,11 +93,10 @@ namespace Spar
         void Render();
 
     private:
-        void ProcessNode(cgltf_node *node, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices);
-        void ProcessMesh(cgltf_mesh *mesh, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices);
-        void ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices);
+        // void ProcessMesh(cgltf_node* node, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices, DirectX::XMMATRIX parentTransform);
+        // void ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices, DirectX::XMMATRIX nodeTransform);
 
-        HRESULT LoadMaterialTexture(Material &mat, cgltf_texture_view *view, TextureType type);
+        // HRESULT LoadMaterialTexture(Material &mat, cgltf_texture_view *view, TextureType type);
 
         ConstantBuffer cb;
         MaterialConstants matColor;
@@ -98,7 +105,7 @@ namespace Spar
     public:
         u32 vertexOffset = 0;
         u32 indexOffset = 0;
-        cgltf_data *m_model;
+        //cgltf_data *m_model;
         wrl::ComPtr<ID3D11ShaderResourceView> m_textureView = nullptr;
         std::string m_dirPath;
         std::string name;
@@ -119,5 +126,7 @@ namespace Spar
 
         wrl::ComPtr<ID3D11Buffer> m_materialBuffer;
         wrl::ComPtr<ID3D11SamplerState> m_samplerState = nullptr;
+
+        DirectX::XMMATRIX nodeTransform;
     };
 }
