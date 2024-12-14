@@ -1,8 +1,6 @@
 cbuffer ConstantBuffer : register(b0)
 {
     matrix mWorld;
-    matrix mView;
-    matrix mProjection;
 };
 
 struct VS_INPUT
@@ -23,8 +21,7 @@ VS_OUTPUT VSMain(VS_INPUT input)
 {
     VS_OUTPUT output = (VS_OUTPUT)0;
     float4 worldPos = mul(float4(input.Pos, 1.0f), mWorld);
-    output.Pos = mul(worldPos, mView);
-    output.Pos = mul(output.Pos, mProjection);
+    output.Pos = worldPos;
     output.Normal = mul((float3x3)mWorld, input.Normal);
     output.Tex = input.Tex;
     return output;
