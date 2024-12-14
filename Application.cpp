@@ -23,46 +23,47 @@ void Spar::Application::Init()
 {
     Log::Init();
     m_renderer->Init();
-    //camera setup
-    m_camera->InitAsPerspective(45.0f, m_renderer->m_width, m_renderer->m_height);
-    m_camera->SetPosition({ 0.0f, 0.0f, 5.f });
-    //shader stuff
+    // camera setup
+    m_camera->InitAsPerspective(90.0f, m_renderer->m_width, m_renderer->m_height);
+    m_camera->SetPosition({0.0f, 0.0f, 5.f});
+    // shader stuff
     Shader shader;
-    const WCHAR* vsShaderPath = L"../../../../assets/shaders/Model/ModelVS.hlsl";
-    const WCHAR* psshaderPath = L"../../../../assets/shaders/Model/ModelPS.hlsl";
+    const WCHAR *vsShaderPath = L"../../../../assets/shaders/Model/ModelVS.hlsl";
+    const WCHAR *psshaderPath = L"../../../../assets/shaders/Model/ModelPS.hlsl";
     shader.ProcessShaders(m_renderer, vsShaderPath, psshaderPath);
     // Load model
-    //suzanne.LoadModel(m_renderer, "../../../../assets/models/Cube/cube.glb");
-    //suzanne.LoadModel(m_renderer, "../../../../assets/models/Sponza/glTF/Sponza.glTF");
-    suzanne.LoadModel(m_renderer, "../../../../assets/models/Suzanne/glTF/Suzanne.glTF");
+    //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/Cube/cube.glTF");
+    //suzanne.LoadModel(m_renderer, m_camera,"../../../../assets/models/Sponza/glTF/Sponza.glTF");
+    //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/SciFiHelmet/glTF/SciFiHelmet.glTF");
+    suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/Suzanne/glTF/Suzanne.glTF");
 
+    //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/balls/MetalRoughSpheres.gltf");
 
     models.push_back(suzanne);
-
 
     // Initialize the world matrix
     m_world = DirectX::XMMatrixIdentity();
     // Initialize the view matrix
     D3D11_RASTERIZER_DESC rasterDesc = {};
-	rasterDesc.FillMode = D3D11_FILL_SOLID;
-	rasterDesc.CullMode = D3D11_CULL_BACK;
-	rasterDesc.FrontCounterClockwise = false;
-	rasterDesc.DepthClipEnable = true;
-	// Create the rasterizer state object
-	m_renderer->m_device->CreateRasterizerState(&rasterDesc, m_rasterState.GetAddressOf()); 
+    rasterDesc.FillMode = D3D11_FILL_SOLID;
+    rasterDesc.CullMode = D3D11_CULL_BACK;
+    rasterDesc.FrontCounterClockwise = false;
+    rasterDesc.DepthClipEnable = true;
+    // Create the rasterizer state object
+    m_renderer->m_device->CreateRasterizerState(&rasterDesc, m_rasterState.GetAddressOf());
     m_renderer->m_context->RSSetState(m_rasterState.Get());
     m_view = m_camera->GetViewMatrix().Transpose();
 
-    //Imgui setup
+    // Imgui setup
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
     io = &ImGui::GetIO();
 
-    io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    io->ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-    io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
-    //io->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+    io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+    io->ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
+    io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // Enable Docking
+    // io->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
     ImGui::StyleColorsDark();
 
@@ -104,27 +105,25 @@ void Spar::Application::Update(float dt)
     static f64 angle = 0.0f;
     angle += dt;
 
-    suzanne.UpdateCB(m_renderer, m_camera, dt);
+    // suzanne.UpdateCB(m_renderer, m_camera, dt);
 }
 
 void Spar::Application::Render()
 {
     m_renderer->Clear();
 
-    EditorMenu();
+    // EditorMenu();
 
-    for (auto& model : models)
+    for (auto &model : models)
     {
         m_renderer->Submit(model);
     }
 
     m_renderer->Present();
-
 }
 
 void Spar::Application::Resize()
 {
-
 }
 
 void Spar::Application::ShutDown()
@@ -144,16 +143,15 @@ void Spar::Application::EditorMenu()
     // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
     if (true)
         ImGui::ShowDemoWindow();
-    
+
     ImGui::Render();
 
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-    
+
     // Update and Render additional Platform Windows
     if (io->ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
         ImGui::UpdatePlatformWindows();
         ImGui::RenderPlatformWindowsDefault();
     }
-
 }

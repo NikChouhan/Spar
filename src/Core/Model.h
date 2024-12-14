@@ -22,6 +22,22 @@ enum class TextureType
     AO
 };
 
+struct Transformation
+{
+    Transformation()
+    {
+        Matrix = DirectX::XMMatrixIdentity();
+        Position = DirectX::XMVECTOR({1.0f, 1.0f, 1.0f});
+        Rotation = DirectX::XMVECTOR({0.0f, 0.0f, 0.0f});
+        Scale = DirectX::XMVECTOR({1.0f, 1.0f, 1.0f});
+    }
+
+    DirectX::XMMATRIX Matrix = DirectX::XMMATRIX();
+    DirectX::XMVECTOR Position = DirectX::XMVECTOR({1.0f, 1.0f, 1.0f});
+    DirectX::XMVECTOR Rotation = DirectX::XMVECTOR({0.0f, 0.0f, 0.0f});
+    DirectX::XMVECTOR Scale = DirectX::XMVECTOR({1.0f, 1.0f, 1.0f});
+};
+
 struct SimpleVertex
 {
     DirectX::XMFLOAT3 Pos;
@@ -29,7 +45,8 @@ struct SimpleVertex
     DirectX::XMFLOAT3 Normal;
 };
 
-struct MaterialConstants {
+struct MaterialConstants
+{
     DirectX::XMFLOAT4 ambientColor;
     DirectX::XMFLOAT4 diffuseColor;
     DirectX::XMFLOAT4 specularColor;
@@ -68,6 +85,8 @@ struct Primitive
     uint32_t materialIndex = 0;
     uint32_t startIndex = 0;
     uint32_t startVertex = 0;
+
+    Transformation transform;
 };
 
 namespace Spar
@@ -77,23 +96,22 @@ namespace Spar
     public:
         Model();
         ~Model();
-        void LoadModel(std::shared_ptr<Spar::Renderer> renderer, std::string path);
+        void LoadModel(std::shared_ptr<Spar::Renderer> renderer, std::shared_ptr<Camera> camera, std::string path);
         void SetBuffers();
         bool SetTexResources();
-        void UpdateCB(std::shared_ptr<Spar::Renderer> renderer, std::shared_ptr<Spar::Camera> camera, static f64 dt);
+        void UpdateCB(Primitive prim, DirectX::XMMATRIX worldMatrix, std::shared_ptr<Camera> camera);
 
         void Render();
 
     private:
-        void ProcessNode(cgltf_node *node, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices);
-        void ProcessMesh(cgltf_mesh *mesh, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices);
-        void ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices);
+        void ProcessNode(cgltf_node *node, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices, Transformation& parentTransform);
+        void ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices, Transformation& parentTransform);
 
         HRESULT LoadMaterialTexture(Material &mat, cgltf_texture_view *view, TextureType type);
+        void ValidateResources();
 
         ConstantBuffer cb;
         MaterialConstants matColor;
-
 
     public:
         u32 vertexOffset = 0;
@@ -102,10 +120,10 @@ namespace Spar
         wrl::ComPtr<ID3D11ShaderResourceView> m_textureView = nullptr;
         std::string m_dirPath;
         std::string name;
-        std::vector<SimpleVertex> vertices;
-        std::vector<u32> indices;
-        std::vector<Primitive> primitives;
-        std::vector<Material> materials;
+        std::vector<SimpleVertex> m_vertices;
+        std::vector<u32> m_indices;
+        std::vector<Primitive> m_primitives;
+        std::vector<Material> m_materials;
 
         std::shared_ptr<Spar::Renderer> renderer;
         std::shared_ptr<Spar::Camera> camera;

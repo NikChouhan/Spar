@@ -17,8 +17,9 @@ Spar::Model::~Model()
     }
 }
 
-void Spar::Model::LoadModel(std::shared_ptr<Spar::Renderer> renderer, std::string path)
+void Spar::Model::LoadModel(std::shared_ptr<Spar::Renderer> renderer, std::shared_ptr<Camera> camera, std::string path)
 {
+    this->camera = camera;
     this->renderer = renderer;
     cgltf_options options = {};
     cgltf_data *data = nullptr;
@@ -54,39 +55,97 @@ void Spar::Model::LoadModel(std::shared_ptr<Spar::Renderer> renderer, std::strin
 
         for (size_t i = 0; i < (scene->nodes_count); i++)
         {
-            ProcessNode(scene->nodes[i], data, vertices, indices);
+            Transformation transform;
+            ProcessNode(scene->nodes[i], data, m_vertices, m_indices, transform);
         }
+        // no of nodes
+        Log::InfoDebug("[CGLTF] No of nodes in the scene: ", scene->nodes_count);
 
         SetBuffers();
 
         Log::Info("[CGLTF] Successfully loaded gltf file");
     }
 
+    ValidateResources();
+
     cgltf_free(data);
 }
 
-void Spar::Model::ProcessMesh(cgltf_mesh *mesh, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices)
+void Spar::Model::ProcessNode(cgltf_node *node, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices, Transformation& parentTransform)
 {
-    for (size_t i = 0; i < mesh->primitives_count; i++)
-    {
-        ProcessPrimitive(&mesh->primitives[i], data, vertices, indices);
-    }
-}
+    Transformation localTransform = parentTransform;
+    DirectX::XMMATRIX translationMatrix = DirectX::XMMatrixIdentity();
+    DirectX::XMMATRIX rotationMatrix = DirectX::XMMatrixIdentity();
+    DirectX::XMMATRIX scaleMatrix = DirectX::XMMatrixIdentity();
 
-void Spar::Model::ProcessNode(cgltf_node *node, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices)
-{
+    if (node->has_translation)
+    {
+        DirectX::XMVECTOR translation = DirectX::XMVectorSet(
+            node->translation[0],
+            node->translation[1],
+            node->translation[2],
+            1.0f);
+        localTransform.Position = translation;
+        translationMatrix = DirectX::XMMatrixTranslationFromVector(translation);
+    }
+
+    if (node->has_rotation)
+    {
+        // Note: cgltf quaternion order is (x,y,z,w) while DirectX expects (w,x,y,z)
+        DirectX::XMVECTOR quaternion = DirectX::XMVectorSet(
+            node->rotation[3], // w
+            node->rotation[0], // x
+            node->rotation[1], // y
+            node->rotation[2]  // z
+        );
+        localTransform.Rotation = quaternion;
+        rotationMatrix = DirectX::XMMatrixRotationQuaternion(quaternion);
+    }
+
+    if (node->has_scale)
+    {
+        DirectX::XMVECTOR scale = DirectX::XMVectorSet(
+            node->scale[0],
+            node->scale[1],
+            node->scale[2],
+            1.0f);
+        localTransform.Scale = scale;
+        scaleMatrix = DirectX::XMMatrixScalingFromVector(scale);
+    }
+
+    if (node->has_matrix)
+    {
+        DirectX::XMMATRIX nodeMatrix = DirectX::XMLoadFloat4x4((DirectX::XMFLOAT4X4 *)node->matrix);
+        localTransform.Matrix = XMMatrixMultiply(localTransform.Matrix, nodeMatrix);
+    }
+    else
+    {
+        localTransform.Matrix = scaleMatrix * rotationMatrix * translationMatrix;
+        Log::InfoDebug("[CGLTF] parentTransform Matrix: {}", localTransform.Matrix);
+
+    }
+    // Process mesh if exists
     if (node->mesh)
     {
-        ProcessMesh(node->mesh, data, vertices, indices);
+        for (size_t i = 0; i < node->mesh->primitives_count; i++)
+        {
+            Log::InfoDebug("[CGLTF] parentTransform Matrix: {}", localTransform.Matrix);
+            Log::InfoDebug("[CGLTF] parentTransform Position: {}", localTransform.Position);
+            Log::InfoDebug("[CGLTF] parentTransform Rotation: {}", localTransform.Rotation);
+            Log::InfoDebug("[CGLTF] parentTransform Scale: {}", localTransform.Scale);
+
+            ProcessPrimitive(&node->mesh->primitives[i], data, vertices, indices, localTransform);
+        }
     }
 
+    // Recursively process child nodes
     for (size_t i = 0; i < node->children_count; i++)
     {
-        ProcessNode(node->children[i], data, vertices, indices);
+        ProcessNode(node->children[i], data, vertices, indices, localTransform);
     }
 }
 
-void Spar::Model::ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices)
+void Spar::Model::ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices, Transformation& parentTransform)
 {
     u32 vertexOffset = vertices.size();
     u32 indexOffset = indices.size();
@@ -110,6 +169,8 @@ void Spar::Model::ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data 
     }
 
     Primitive prim;
+
+    prim.transform = parentTransform;
 
     // Get attributes
     cgltf_attribute *pos_attribute = nullptr;
@@ -143,8 +204,11 @@ void Spar::Model::ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data 
 
     for (int i = 0; i < vertexCount; i++)
     {
+        DirectX::XMMATRIX transformMatrix = parentTransform.Matrix;
+
         SimpleVertex vertex = {};
 
+        // Read original vertex data
         if (cgltf_accessor_read_float(pos_attribute->data, i, &vertex.Pos.x, 3) == 0)
         {
             Log::Warn("[CGLTF] Unable to read Position attributes!");
@@ -158,6 +222,17 @@ void Spar::Model::ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data 
             Log::Warn("[CGLTF] Unable to read Normal attributes!");
         }
 
+        // Transform position
+        DirectX::XMVECTOR pos = DirectX::XMLoadFloat3(&vertex.Pos);
+        pos = DirectX::XMVector3Transform(pos, transformMatrix);
+        DirectX::XMStoreFloat3(&vertex.Pos, pos);
+
+        // Transform normal (use inverse transpose matrix to handle non-uniform scaling)
+        DirectX::XMMATRIX normalMatrix = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, transformMatrix));
+        DirectX::XMVECTOR normal = DirectX::XMLoadFloat3(&vertex.Normal);
+        normal = DirectX::XMVector3Normalize(DirectX::XMVector3Transform(normal, normalMatrix));
+        DirectX::XMStoreFloat3(&vertex.Normal, normal);
+
         vertices.push_back(vertex);
     }
 
@@ -168,21 +243,19 @@ void Spar::Model::ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data 
 
     // material
 
-   // material
-
-    cgltf_material* material = primitive->material;
+    cgltf_material *material = primitive->material;
     Material mat = {};
     prim.materialIndex = material - data->materials;
 
     HRESULT hr = E_FAIL;
 
     // map texture types to their respective textures (now using cgltf_texture_view*)
-    std::unordered_map<TextureType, cgltf_texture_view*> textureMap;
+    std::unordered_map<TextureType, cgltf_texture_view *> textureMap;
     std::unordered_set<std::string> loadedTextures; // To track loaded textures
 
     if (material->has_pbr_metallic_roughness)
     {
-        cgltf_pbr_metallic_roughness* pbr = &material->pbr_metallic_roughness;
+        cgltf_pbr_metallic_roughness *pbr = &material->pbr_metallic_roughness;
         // Map base color texture (albedo)
         textureMap[TextureType::ALBEDO] = &pbr->base_color_texture;
         // Map metallic-roughness texture
@@ -208,7 +281,7 @@ void Spar::Model::ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data 
     }
 
     // Load all textures from the map if they haven't been loaded before
-    for (const auto& pair : textureMap)
+    for (const auto &pair : textureMap)
     {
         std::string textureIdentifier = std::to_string(static_cast<int>(pair.first)); // Unique identifier for texture type
 
@@ -231,14 +304,15 @@ void Spar::Model::ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data 
         }
     }
 
+    prim.transform = parentTransform;
     prim.startIndex = indexOffset;
     prim.startVertex = vertexOffset;
-    prim.vertexCount = vertices.size();
-    prim.indexCount = indices.size();
+    prim.vertexCount = vertexCount;
+    prim.indexCount = indexCount;
 
-    prim.materialIndex = materials.size();
-    materials.push_back(mat);
-    primitives.push_back(prim);
+    // prim.materialIndex = m_materials.size();
+    m_materials.push_back(mat);
+    m_primitives.push_back(prim);
 }
 
 HRESULT Spar::Model::LoadMaterialTexture(Material &mat, cgltf_texture_view *textureView, TextureType type)
@@ -279,14 +353,14 @@ HRESULT Spar::Model::LoadMaterialTexture(Material &mat, cgltf_texture_view *text
             mat.AOPath = path;
             return S_OK;
         default:
-            Log::Warn("Unknown texture type.");
+            Log::Warn("[Teexture] Unknown texture type.");
             return E_FAIL;
         }
     }
     else
     {
         // Handle missing texture or image
-        Log::Warn("Texture or image not found for this material.");
+        Log::Warn("[Texture] Texture or image not found for this material.");
         return E_FAIL;
     }
 }
@@ -295,29 +369,29 @@ void Spar::Model::SetBuffers()
 {
     // Create vertex buffer
     D3D11_BUFFER_DESC vbDesc = {};
-    vbDesc.ByteWidth = sizeof(SimpleVertex) * vertices.size();
+    vbDesc.ByteWidth = sizeof(SimpleVertex) * m_vertices.size();
     vbDesc.Usage = D3D11_USAGE_DEFAULT;
     vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 
     D3D11_SUBRESOURCE_DATA vbData = {};
-    vbData.pSysMem = vertices.data();
+    vbData.pSysMem = m_vertices.data();
 
     HRESULT hr = renderer->m_device->CreateBuffer(&vbDesc, &vbData, m_vertexBuffer.GetAddressOf());
     if (FAILED(hr))
-        Log::Error("Failed to create vertex buffer");
+        Log::Error("[D3D] Failed to create vertex buffer");
 
     // Create index buffer
     D3D11_BUFFER_DESC ibDesc = {};
-    ibDesc.ByteWidth = sizeof(u32) * indices.size();
+    ibDesc.ByteWidth = sizeof(u32) * m_indices.size();
     ibDesc.Usage = D3D11_USAGE_DEFAULT;
     ibDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 
     D3D11_SUBRESOURCE_DATA ibData = {};
-    ibData.pSysMem = indices.data();
+    ibData.pSysMem = m_indices.data();
 
     hr = renderer->m_device->CreateBuffer(&ibDesc, &ibData, m_indexBuffer.GetAddressOf());
     if (FAILED(hr))
-        Log::Error("Failed to create index buffer");
+        Log::Error("[D3D] Failed to create index buffer");
 
     // create sampler state;
     D3D11_SAMPLER_DESC samplerDesc = {};
@@ -346,7 +420,7 @@ void Spar::Model::SetBuffers()
 
     hr = renderer->m_device->CreateBuffer(&cbDesc, nullptr, m_constantBuffer.GetAddressOf());
     if (FAILED(hr))
-        Log::Error("Failed to create world/projection/view matrix constant buffer");
+        Log::Error("[D3D] Failed to create world/projection/view matrix constant buffer");
 
     // Set material constant buffer
     D3D11_BUFFER_DESC matDesc = {};
@@ -358,19 +432,11 @@ void Spar::Model::SetBuffers()
 
     hr = renderer->m_device->CreateBuffer(&matDesc, nullptr, m_materialBuffer.GetAddressOf());
     if (FAILED(hr))
-        Log::Error("Failed to create material constant buffer");
-
-    Log::Info("[CGLTF] no of vertices in model: ");
-    auto v = std::to_string(vertices.size());
-    Log::Info(v);
-
-    Log::Info("[CGLTF] no of indices in model: ");
-    auto ind = std::to_string(indices.size());
-    Log::Info(ind);
+        Log::Error("[D3D] Failed to create material constant buffer");
 
     // Store counts
-    m_vertexCount = vertices.size();
-    m_indexCount = indices.size();
+    m_vertexCount = m_vertices.size();
+    m_indexCount = m_indices.size();
 
     // Clear CPU data
     /*vertices.clear();
@@ -385,11 +451,11 @@ bool Spar::Model::SetTexResources()
 
     renderer->m_context->PSSetSamplers(0, 1, m_samplerState.GetAddressOf());
 
-    for (auto &mat : materials)
+    for (auto &mat : m_materials)
     {
         if (mat.HasAlbedo)
         {
-            renderer->m_context->   PSSetShaderResources(static_cast<UINT>(TextureType::ALBEDO), 1, mat.AlbedoView.GetAddressOf());
+            renderer->m_context->PSSetShaderResources(static_cast<UINT>(TextureType::ALBEDO), 1, mat.AlbedoView.GetAddressOf());
         }
         if (mat.HasNormal)
         {
@@ -412,19 +478,21 @@ bool Spar::Model::SetTexResources()
     return true;
 }
 
-void Spar::Model::UpdateCB(std::shared_ptr<Spar::Renderer> renderer, std::shared_ptr<Spar::Camera> camera, static f64 dt)
+void Spar::Model::UpdateCB(Primitive prim, DirectX::XMMATRIX worldMatrix, std::shared_ptr<Camera> camera)
 {
     this->camera = camera;
-    this->renderer = renderer;
+
+    DirectX::XMMATRIX viewMatrix = camera->GetViewMatrix();
+    DirectX::XMMATRIX projectionMatrix = camera->GetProjectionMatrix();
+
+    DirectX::XMMATRIX worldViewProjMatrix = worldMatrix * viewMatrix * projectionMatrix;
 
     // update word/view/projection matrix
-    cb.mWorld = SM::Matrix::CreateRotationY(dt);
-    cb.mView = camera->GetViewMatrix().Transpose();
-    cb.mProjection = camera->GetProjectionMatrix().Transpose();
+    cb.worldProjectionViewMat = worldViewProjMatrix;
     renderer->m_context->UpdateSubresource(this->m_constantBuffer.Get(), 0, nullptr, &cb, 0, 0);
 
     // update material color
-    for (auto &mat : materials)
+    for (auto &mat : m_materials)
     {
         mat.FlatColor = {1.0f, 1.0f, 1.0f};
     }
@@ -447,11 +515,32 @@ void Spar::Model::Render()
     renderer->m_context->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 
     // Draw each primitive
-    for (const auto &prim : primitives)
+    for (const auto& prim : m_primitives)
     {
         // Set material textures
-        const Material &mat = materials[prim.materialIndex];
+        const Material& mat = m_materials[prim.materialIndex];
+        renderer->m_context->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
+
+        DirectX::XMMATRIX worldMatrix = prim.transform.Matrix;
+
+        UpdateCB(prim, worldMatrix, camera);
+
         // Draw primitive
-        renderer->m_context->DrawIndexed(prim.indexCount, prim.startIndex, 0);
+        renderer->m_context->DrawIndexed(prim.indexCount, prim.startIndex, prim.startVertex);
     }
+}
+
+void Spar::Model::ValidateResources()
+{
+    Log::Info("[CGLTF] Validating Model Resources:");
+    Log::Info("[CGLTF] Vertices: " + std::to_string(m_vertices.size()));
+    Log::Info("[CGLTF] Indices: " + std::to_string(m_indices.size()));
+    Log::Info("[CGLTF] Materials: " + std::to_string(m_materials.size()));
+    Log::Info("[CGLTF] Primitives: " + std::to_string(m_primitives.size()));
+
+    // Check camera position
+    DirectX::XMFLOAT3 pos;
+    XMStoreFloat3(&pos, camera->GetPosition());
+    Log::Info("[D3D] Camera Position: " + std::to_string(pos.x) + ", " +
+              std::to_string(pos.y) + ", " + std::to_string(pos.z));
 }
