@@ -3,8 +3,9 @@
 #include <string>
 #include <vector>
 
+#include <cgltf.h>
+
 #include "Buffer.h"
-#include "cgltf.h"
 #include "WinUtil.h"
 
 namespace Spar

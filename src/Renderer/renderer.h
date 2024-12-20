@@ -6,7 +6,9 @@
 #include <sstream>
 #include "Buffer.h"
 
-namespace Spar { class Model; }
+namespace Spar { class Model;}
+struct SDL_Window; struct SDL_Surface;
+
 
 namespace Spar
 {

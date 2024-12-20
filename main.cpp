@@ -1,5 +1,3 @@
-#define SDL_MAIN_HANDLED
-#include <SDL.h>
 #include <stdio.h>
 #include "WinUtil.h"
 #include "Application.h"
