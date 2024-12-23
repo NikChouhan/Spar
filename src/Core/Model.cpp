@@ -73,66 +73,32 @@ void Spar::Model::LoadModel(std::shared_ptr<Spar::Renderer> renderer, std::share
 
 void Spar::Model::ProcessNode(cgltf_node *node, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices, Transformation& parentTransform)
 {
-    Transformation localTransform = parentTransform;
-    DirectX::XMMATRIX translationMatrix = DirectX::XMMatrixIdentity();
-    DirectX::XMMATRIX rotationMatrix = DirectX::XMMatrixIdentity();
-    DirectX::XMMATRIX scaleMatrix = DirectX::XMMatrixIdentity();
+    Transformation localTransform;
+    localTransform.Matrix = parentTransform.Matrix;
 
-    if (node->has_translation)
-    {
-        DirectX::XMVECTOR translation = DirectX::XMVectorSet(
-            node->translation[0],
-            node->translation[1],
-            node->translation[2],
-            1.0f);
-        localTransform.Position = translation;
-        translationMatrix = DirectX::XMMatrixTranslationFromVector(translation);
+    if (node->has_translation) {
+        localTransform.Matrix *= DirectX::XMMatrixTranslation(node->translation[0], node->translation[1], node->translation[2]);
+    }
+    if (node->has_rotation) {
+        DirectX::XMVECTOR quat = DirectX::XMVectorSet(node->rotation[3], node->rotation[0], node->rotation[1], node->rotation[2]);
+        localTransform.Matrix *= DirectX::XMMatrixRotationQuaternion(quat);
+    }
+    if (node->has_scale) {
+        localTransform.Matrix *= DirectX::XMMatrixScaling(node->scale[0], node->scale[1], node->scale[2]);
     }
 
-    if (node->has_rotation)
-    {
-        // Note: cgltf quaternion order is (x,y,z,w) while DirectX expects (w,x,y,z)
-        DirectX::XMVECTOR quaternion = DirectX::XMVectorSet(
-            node->rotation[3], // w
-            node->rotation[0], // x
-            node->rotation[1], // y
-            node->rotation[2]  // z
-        );
-        localTransform.Rotation = quaternion;
-        rotationMatrix = DirectX::XMMatrixRotationQuaternion(quaternion);
-    }
+    //localTransform.Matrix = scaleMatrix * rotationMatrix * translationMatrix;
+    Log::InfoDebug("[CGLTF] parentTransform Matrix: {}", localTransform.Matrix);
 
-    if (node->has_scale)
-    {
-        DirectX::XMVECTOR scale = DirectX::XMVectorSet(
-            node->scale[0],
-            node->scale[1],
-            node->scale[2],
-            1.0f);
-        localTransform.Scale = scale;
-        scaleMatrix = DirectX::XMMatrixScalingFromVector(scale);
-    }
-
-    if (node->has_matrix)
-    {
-        DirectX::XMMATRIX nodeMatrix = DirectX::XMLoadFloat4x4((DirectX::XMFLOAT4X4 *)node->matrix);
-        localTransform.Matrix = XMMatrixMultiply(localTransform.Matrix, nodeMatrix);
-    }
-    else
-    {
-        localTransform.Matrix = scaleMatrix * rotationMatrix * translationMatrix;
-        Log::InfoDebug("[CGLTF] parentTransform Matrix: {}", localTransform.Matrix);
-
-    }
     // Process mesh if exists
     if (node->mesh)
     {
-        for (size_t i = 0; i < node->mesh->primitives_count; i++)
+        for (size_t i = 0; i < (node->mesh->primitives_count); i++)
         {
             Log::InfoDebug("[CGLTF] parentTransform Matrix: {}", localTransform.Matrix);
-            Log::InfoDebug("[CGLTF] parentTransform Position: {}", localTransform.Position);
+            /*Log::InfoDebug("[CGLTF] parentTransform Position: {}", localTransform.Position);
             Log::InfoDebug("[CGLTF] parentTransform Rotation: {}", localTransform.Rotation);
-            Log::InfoDebug("[CGLTF] parentTransform Scale: {}", localTransform.Scale);
+            Log::InfoDebug("[CGLTF] parentTransform Scale: {}", localTransform.Scale);*/
 
             ProcessPrimitive(&node->mesh->primitives[i], data, vertices, indices, localTransform);
         }
@@ -182,7 +148,7 @@ void Spar::Model::ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data 
         if (strcmp(primitive->attributes[i].name, "POSITION") == 0)
         {
             pos_attribute = &primitive->attributes[i];
-        }
+        }   
         if (strcmp(primitive->attributes[i].name, "TEXCOORD_0") == 0)
         {
             tex_attribute = &primitive->attributes[i];
@@ -204,8 +170,6 @@ void Spar::Model::ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data 
 
     for (int i = 0; i < vertexCount; i++)
     {
-        DirectX::XMMATRIX transformMatrix = parentTransform.Matrix;
-
         SimpleVertex vertex = {};
 
         // Read original vertex data
@@ -221,17 +185,6 @@ void Spar::Model::ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data 
         {
             Log::Warn("[CGLTF] Unable to read Normal attributes!");
         }
-
-        // Transform position
-        DirectX::XMVECTOR pos = DirectX::XMLoadFloat3(&vertex.Pos);
-        pos = DirectX::XMVector3Transform(pos, transformMatrix);
-        DirectX::XMStoreFloat3(&vertex.Pos, pos);
-
-        // Transform normal (use inverse transpose matrix to handle non-uniform scaling)
-        DirectX::XMMATRIX normalMatrix = DirectX::XMMatrixTranspose(DirectX::XMMatrixInverse(nullptr, transformMatrix));
-        DirectX::XMVECTOR normal = DirectX::XMLoadFloat3(&vertex.Normal);
-        normal = DirectX::XMVector3Normalize(DirectX::XMVector3Transform(normal, normalMatrix));
-        DirectX::XMStoreFloat3(&vertex.Normal, normal);
 
         vertices.push_back(vertex);
     }
@@ -489,21 +442,49 @@ void Spar::Model::UpdateCB(Primitive prim, DirectX::XMMATRIX worldMatrix, std::s
 
     // update word/view/projection matrix
     cb.worldProjectionViewMat = worldViewProjMatrix;
-    renderer->m_context->UpdateSubresource(this->m_constantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-
-    // update material color
-    for (auto &mat : m_materials)
+    //Log::InfoDebug("[CGLTF] WorldProjViewMat", worldViewProjMatrix);
+    // Map the constant buffer for writing
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    HRESULT hr = renderer->m_context->Map(m_constantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+    if (SUCCEEDED(hr))
     {
-        mat.FlatColor = {1.0f, 1.0f, 1.0f};
+        memcpy(mappedResource.pData, &cb, sizeof(cb));
+        renderer->m_context->Unmap(m_constantBuffer.Get(), 0);
+    }
+    else
+    {
+        Log::Error("[D3D] Failed to map constant buffer");
     }
 
-    // update material constant buffer
-    matColor.ambientColor = DirectX::XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
-    matColor.diffuseColor = DirectX::XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
-    matColor.specularColor = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-    matColor.specularPower = 32.0f;
+    // Update material properties only if they've changed
 
-    renderer->m_context->UpdateSubresource(this->m_materialBuffer.Get(), 0, nullptr, &matColor, 0, 0);
+    bool materialNeedsUpdate = false;
+    if (materialNeedsUpdate) 
+    {
+        MaterialConstants matColor;
+        for (auto& mat : m_materials)
+        {
+            mat.FlatColor = { 1.0f, 1.0f, 1.0f };
+        }
+
+        matColor.ambientColor = DirectX::XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
+        matColor.diffuseColor = DirectX::XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
+        matColor.specularColor = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+        matColor.specularPower = 32.0f;
+
+        // Map the material constant buffer for writing
+        hr = renderer->m_context->Map(m_materialBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+        if (SUCCEEDED(hr))
+        {
+            memcpy(mappedResource.pData, &matColor, sizeof(matColor));
+            renderer->m_context->Unmap(m_materialBuffer.Get(), 0);
+        }
+        else
+        {
+            Log::Error("[D3D] Failed to map material constant buffer");
+        }
+        materialNeedsUpdate = false;
+    }
 }
 
 void Spar::Model::Render()

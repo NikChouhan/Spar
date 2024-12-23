@@ -5,7 +5,7 @@ target("core")
     add_deps("Math", {public = true})
     add_files("Core/**.cpp")
     add_headerfiles("Core/**.h")
-    add_packages("stb", "cgltf", {public = true})
+    add_packages("stb", "cgltf", "fastgltf", {public = true})
     add_includedirs("core", {public = true})
 target_end()
 

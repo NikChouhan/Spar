@@ -30,6 +30,16 @@ add_requires("cgltf",
     }
 })
 
+add_requires("fastgltf",
+{
+    debug =	is_mode("debug"),
+    configs =
+    {
+        shared = false,
+        runtimes = "MTd",
+    }
+})
+
 set_defaultmode("debug")
 add_includedirs("src", "vendor")
 

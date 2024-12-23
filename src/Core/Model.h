@@ -28,15 +28,15 @@ struct Transformation
     Transformation()
     {
         Matrix = DirectX::XMMatrixIdentity();
-        Position = DirectX::XMVECTOR({1.0f, 1.0f, 1.0f});
-        Rotation = DirectX::XMVECTOR({0.0f, 0.0f, 0.0f});
-        Scale = DirectX::XMVECTOR({1.0f, 1.0f, 1.0f});
+        DirectX::XMVECTOR Position = DirectX::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f);
+        DirectX::XMVECTOR Rotation = DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+        DirectX::XMVECTOR Scale = DirectX::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
-    DirectX::XMMATRIX Matrix = DirectX::XMMATRIX();
-    DirectX::XMVECTOR Position = DirectX::XMVECTOR({1.0f, 1.0f, 1.0f});
-    DirectX::XMVECTOR Rotation = DirectX::XMVECTOR({0.0f, 0.0f, 0.0f});
-    DirectX::XMVECTOR Scale = DirectX::XMVECTOR({1.0f, 1.0f, 1.0f});
+    DirectX::XMMATRIX Matrix = DirectX::XMMatrixIdentity();
+    DirectX::XMVECTOR Position = DirectX::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f);
+    DirectX::XMVECTOR Rotation = DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+    DirectX::XMVECTOR Scale = DirectX::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f);
 };
 
 struct SimpleVertex

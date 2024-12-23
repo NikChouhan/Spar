@@ -29,7 +29,7 @@ void Spar::Application::Init()
     m_renderer->Init();
     // camera setup
     m_camera->InitAsPerspective(90.0f, m_renderer->m_width, m_renderer->m_height);
-    m_camera->SetPosition({0.0f, 0.0f, 5.f});
+    m_camera->SetPosition({0.0f, 0.0f, -6.f});
     // shader stuff
     Shader shader;
     const WCHAR *vsShaderPath = L"../../../../assets/shaders/Model/ModelVS.hlsl";
@@ -37,11 +37,13 @@ void Spar::Application::Init()
     shader.ProcessShaders(m_renderer, vsShaderPath, psshaderPath);
     // Load model
     //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/Cube/cube.glTF");
-    //suzanne.LoadModel(m_renderer, m_camera,"../../../../assets/models/Sponza/glTF/Sponza.glTF");
-    //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/SciFiHelmet/glTF/SciFiHelmet.glTF");
-    suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/Suzanne/glTF/Suzanne.glTF");
+    //suzanne.LoadModel(m_renderer, m_camera,"../../../../assets/models/sponza/Sponza.glTF");
+    //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/scifi/SciFiHelmet.gltf");
+    //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/suzanne/Suzanne.gltf");
 
-    //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/balls/MetalRoughSpheres.gltf");
+   suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/balls/MetalRoughSpheres.gltf");
+    //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/flighthelmet/FlightHelmet.gltf");
+
 
     models.push_back(suzanne);
 
@@ -49,7 +51,7 @@ void Spar::Application::Init()
     m_world = DirectX::XMMatrixIdentity();
     // Initialize the view matrix
     D3D11_RASTERIZER_DESC rasterDesc = {};
-    rasterDesc.FillMode = D3D11_FILL_SOLID;
+    rasterDesc.FillMode = D3D11_FILL_WIREFRAME;
     rasterDesc.CullMode = D3D11_CULL_BACK;
     rasterDesc.FrontCounterClockwise = false;
     rasterDesc.DepthClipEnable = true;
@@ -109,7 +111,7 @@ void Spar::Application::Update(float dt)
     static f64 angle = 0.0f;
     angle += dt;
 
-    // suzanne.UpdateCB(m_renderer, m_camera, dt);
+    //suzanne.UpdateCB(m_renderer, m_camera, dt);
 }
 
 void Spar::Application::Render()
