@@ -19,12 +19,12 @@ xmake run
 - [ ] Normal maps
 - [x] Diffuse Maps
 - [ ] Emmision and specular maps
-- [ ] Materials
-- [ ] Lights 
+- [x] Materials
+- [] Lights 
     - [ ] Point lights
     - [ ] Directional Lights
     - [ ] Spotlights
-- [ ] Model loading (gltf first)
+- [x] Model loading (gltf first)
 - [ ] Bling-Phong model
 - [ ] A complex scene with all features implemented as well as proper lighting
 -------------------------------------------------------
