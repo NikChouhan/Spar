@@ -10,6 +10,8 @@
 #include <SDL2\SDL.h>
 
 
+static void HandleCameraMovement(std::shared_ptr<Spar::Camera> camera, float deltaTime, const Uint8* keyState);
+static void HandleMouseMovement(std::shared_ptr<Spar::Camera> camera);
 
 Spar::Application::Application()
 {
@@ -28,7 +30,7 @@ void Spar::Application::Init()
     Log::Init();
     m_renderer->Init();
     // camera setup
-    m_camera->InitAsPerspective(90.0f, m_renderer->m_width, m_renderer->m_height);
+    m_camera->InitAsPerspective(45.0f, m_renderer->m_width, m_renderer->m_height);
     m_camera->SetPosition({0.0f, 0.0f, -6.f});
     // shader stuff
     Shader shader;
@@ -37,28 +39,23 @@ void Spar::Application::Init()
     shader.ProcessShaders(m_renderer, vsShaderPath, psshaderPath);
     // Load model
     //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/Cube/cube.glTF");
-    //suzanne.LoadModel(m_renderer, m_camera,"../../../../assets/models/sponza/Sponza.glTF");
+    suzanne.LoadModel(m_renderer, m_camera,"../../../../assets/models/sponza/Sponza.glTF");
     //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/scifi/SciFiHelmet.gltf");
     //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/suzanne/Suzanne.gltf");
-
-   suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/balls/MetalRoughSpheres.gltf");
+    //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/balls/MetalRoughSpheres.gltf");
     //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/flighthelmet/FlightHelmet.gltf");
-
 
     models.push_back(suzanne);
 
-    // Initialize the world matrix
-    m_world = DirectX::XMMatrixIdentity();
-    // Initialize the view matrix
+    //raster desc
     D3D11_RASTERIZER_DESC rasterDesc = {};
-    rasterDesc.FillMode = D3D11_FILL_WIREFRAME;
-    rasterDesc.CullMode = D3D11_CULL_BACK;
+    rasterDesc.FillMode = D3D11_FILL_SOLID;
+    rasterDesc.CullMode = D3D11_CULL_FRONT;
     rasterDesc.FrontCounterClockwise = false;
     rasterDesc.DepthClipEnable = true;
     // Create the rasterizer state object
     m_renderer->m_device->CreateRasterizerState(&rasterDesc, m_rasterState.GetAddressOf());
     m_renderer->m_context->RSSetState(m_rasterState.Get());
-    m_view = m_camera->GetViewMatrix().Transpose();
 
     //// Imgui setup
     //IMGUI_CHECKVERSION();
@@ -111,6 +108,10 @@ void Spar::Application::Update(float dt)
     static f64 angle = 0.0f;
     angle += dt;
 
+    const Uint8* keyState = SDL_GetKeyboardState(NULL);
+    HandleCameraMovement(m_camera, dt, keyState);
+    HandleMouseMovement(m_camera);
+
     //suzanne.UpdateCB(m_renderer, m_camera, dt);
 }
 
@@ -161,3 +162,63 @@ void Spar::Application::ShutDown()
 //        ImGui::RenderPlatformWindowsDefault();
 //    }
 //}
+
+//sightly broken
+static void HandleCameraMovement(std::shared_ptr<Spar::Camera> camera, float deltaTime, const Uint8* keyState)
+{
+    constexpr float moveSpeed = 5.0f;
+    constexpr float rotationSpeed = 1.0f;
+
+    SM::Vector3 movement(0.0f, 0.0f, 0.0f);
+
+    if (keyState[SDL_SCANCODE_W]) movement.z += moveSpeed * deltaTime;
+    if (keyState[SDL_SCANCODE_S]) movement.z -= moveSpeed * deltaTime;
+    if (keyState[SDL_SCANCODE_A]) movement.x -= moveSpeed * deltaTime;
+    if (keyState[SDL_SCANCODE_D]) movement.x += moveSpeed * deltaTime;
+    if (keyState[SDL_SCANCODE_Q]) movement.y += moveSpeed * deltaTime;
+    if (keyState[SDL_SCANCODE_E]) movement.y -= moveSpeed * deltaTime;
+
+    camera->Translate(movement);
+
+    if (keyState[SDL_SCANCODE_UP]) camera->Rotate(SM::Vector3(1.0f, 0.0f, 0.0f), rotationSpeed * deltaTime);
+    if (keyState[SDL_SCANCODE_DOWN]) camera->Rotate(SM::Vector3(1.0f, 0.0f, 0.0f), -rotationSpeed * deltaTime);
+    if (keyState[SDL_SCANCODE_LEFT]) camera->Rotate(SM::Vector3(0.0f, 1.0f, 0.0f), rotationSpeed * deltaTime);
+    if (keyState[SDL_SCANCODE_RIGHT]) camera->Rotate(SM::Vector3(0.0f, 1.0f, 0.0f), -rotationSpeed * deltaTime);
+}
+
+
+//broken
+void HandleMouseMovement(std::shared_ptr<Spar::Camera> camera)
+{
+
+    SDL_ShowCursor(SDL_DISABLE);
+
+    static bool firstMouse = true;
+    static int lastMouseX = 0, lastMouseY = 0;
+
+    int mouseX, mouseY;
+    SDL_GetMouseState(&mouseX, &mouseY);
+
+    if (firstMouse)
+    {
+        lastMouseX = mouseX;
+        lastMouseY = mouseY;
+        firstMouse = false;
+    }
+
+    int deltaX = mouseX - lastMouseX; 
+    int deltaY = mouseY - lastMouseY; 
+
+    lastMouseX = mouseX;
+    lastMouseY = mouseY;
+
+    const float sensitivity = 0.1f; 
+    float yaw = static_cast<float>(deltaX) * sensitivity;
+    float pitch = static_cast<float>(-deltaY) * sensitivity;
+
+    // Rotate camera around its local axes
+    camera->Rotate(SM::Vector3(0.0f, 1.0f, 0.0f), yaw);       
+    camera->Rotate(camera->GetLookAtTarget().Cross(camera->GetUp()), pitch); 
+}
+
+

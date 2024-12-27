@@ -20,7 +20,7 @@ struct VS_OUTPUT
 VS_OUTPUT VSMain(VS_INPUT input)
 {
     VS_OUTPUT output = (VS_OUTPUT)0;
-    float4 worldPos = mul(float4(input.Pos, 1.0f), mWorld);
+    float4 worldPos = mul(mWorld, float4(input.Pos, 1.0f));
     output.Pos = worldPos;
     output.Normal = mul((float3x3)mWorld, input.Normal);
     output.Tex = input.Tex;

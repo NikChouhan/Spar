@@ -36,8 +36,8 @@ namespace Spar
 		wrl::ComPtr<ID3D11Device> m_device;
 		wrl::ComPtr<ID3D11DeviceContext> m_context;
 
-		UINT m_width = 1000;
-		UINT m_height = 600;
+		UINT m_width = 1800;
+		UINT m_height = 1000;
 
 		//std::vector<DrawableAssets> assets;
 

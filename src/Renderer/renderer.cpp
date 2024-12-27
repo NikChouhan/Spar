@@ -43,7 +43,7 @@ void Spar::Renderer::Submit(Model& model)
 		return;
 	}
 
-	model.Render();
+	model.Render();	
 
 }
 
@@ -53,16 +53,14 @@ void Spar::Renderer::Clear()
 	assert(m_SwapChain);
 	SetViewPort();
 	auto rtv = m_RenderTargetView.Get();
-	m_context->ClearRenderTargetView(rtv, DirectX::Colors::CadetBlue);
+	m_context->ClearRenderTargetView(rtv, DirectX::Colors::FloralWhite);
 	m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 }
 
 void Spar::Renderer::Present() const
 {
-	m_SwapChain->Present(0, 0);
+	m_SwapChain->Present(1, 0);
 }
-
-
 
 
 void Spar::Renderer::InitWindow()
@@ -107,9 +105,6 @@ void Spar::Renderer::InitD3D11()
 
 	SetViewPort();
 }
-
-
-
 
 void Spar::Renderer::CreateDevice()
 {

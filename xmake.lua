@@ -40,6 +40,8 @@ add_requires("fastgltf",
     }
 })
 
+add_requires("directxtk")
+
 set_defaultmode("debug")
 add_includedirs("src", "vendor")
 
@@ -48,7 +50,7 @@ set_allowedmodes("debug", "release")
 add_syslinks("d3d11","user32.lib", "dxgi", "dxguid", "comctl32.lib", "d3dcompiler.lib", "gdi32.lib", "kernel32.lib", "shell32.lib")
 add_defines("UNICODE", "_UNICODE")
 
-add_includedirs("src", "vendor", "src/Core", "src/Renderer","vendor/Math")
+add_includedirs("src", "vendor", "src/Core", "src/Renderer")
 
 set_languages("cxx20", "c17")
 set_warnings("all", "extra")

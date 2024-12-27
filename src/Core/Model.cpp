@@ -455,11 +455,7 @@ void Spar::Model::UpdateCB(Primitive prim, DirectX::XMMATRIX worldMatrix, std::s
     {
         Log::Error("[D3D] Failed to map constant buffer");
     }
-
-    // Update material properties only if they've changed
-
-    bool materialNeedsUpdate = false;
-    if (materialNeedsUpdate) 
+ 
     {
         MaterialConstants matColor;
         for (auto& mat : m_materials)
@@ -483,7 +479,6 @@ void Spar::Model::UpdateCB(Primitive prim, DirectX::XMMATRIX worldMatrix, std::s
         {
             Log::Error("[D3D] Failed to map material constant buffer");
         }
-        materialNeedsUpdate = false;
     }
 }
 
