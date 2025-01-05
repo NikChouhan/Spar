@@ -9,3 +9,6 @@ build/
 .DS_Store
 
 vsxmake2022/
+
+# too large 
+assets/models/bistro/

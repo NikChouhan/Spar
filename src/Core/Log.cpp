@@ -90,4 +90,14 @@ namespace Spar
             << vec.x << ", " << vec.y << ", " << vec.z << ", " << vec.w << "]";
         return oss.str();
     }
+
+    std::string Log::FormatLogs(const std::string& msg, const SM::Vector3& vector)
+    {
+        std::ostringstream oss;
+        DirectX::XMFLOAT4 vec;
+        DirectX::XMStoreFloat4(&vec, vector);
+        oss << msg << ": ["
+            << vec.x << ", " << vec.y << ", " << vec.z << ", " << vec.w << "]";
+        return oss.str();
+    }
 };

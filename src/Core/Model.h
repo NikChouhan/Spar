@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <unordered_set>
 
 #include <cgltf.h>
 
@@ -138,5 +139,8 @@ namespace Spar
 
         wrl::ComPtr<ID3D11Buffer> m_materialBuffer;
         wrl::ComPtr<ID3D11SamplerState> m_samplerState = nullptr;
+
+        std::unordered_set<std::string> loadedTextures; // To track loaded textures
+
     };
 }

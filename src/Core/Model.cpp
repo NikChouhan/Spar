@@ -3,7 +3,6 @@
 #include "Texture.h"
 #include "renderer.h"
 #include "Camera.h"
-#include <unordered_set>
 
 Spar::Model::Model()
 {
@@ -75,27 +74,29 @@ void Spar::Model::ProcessNode(cgltf_node *node, const cgltf_data *data, std::vec
 {
     Transformation localTransform;
     localTransform.Matrix = parentTransform.Matrix;
-
-    if (node->has_translation) {
-        localTransform.Matrix *= DirectX::XMMatrixTranslation(node->translation[0], node->translation[1], node->translation[2]);
+    if (node->has_scale) 
+    {
+        localTransform.Matrix *= DirectX::XMMatrixScaling(node->scale[0], node->scale[1], node->scale[2]);
     }
-    if (node->has_rotation) {
+    if (node->has_rotation) 
+    {
         DirectX::XMVECTOR quat = DirectX::XMVectorSet(node->rotation[3], node->rotation[0], node->rotation[1], node->rotation[2]);
         localTransform.Matrix *= DirectX::XMMatrixRotationQuaternion(quat);
     }
-    if (node->has_scale) {
-        localTransform.Matrix *= DirectX::XMMatrixScaling(node->scale[0], node->scale[1], node->scale[2]);
+    if (node->has_translation) 
+    {
+        localTransform.Matrix *= DirectX::XMMatrixTranslation(node->translation[0], node->translation[1], node->translation[2]);
     }
 
     //localTransform.Matrix = scaleMatrix * rotationMatrix * translationMatrix;
-    Log::InfoDebug("[CGLTF] parentTransform Matrix: {}", localTransform.Matrix);
+    //Log::InfoDebug("[CGLTF] parentTransform Matrix: {}", localTransform.Matrix);
 
     // Process mesh if exists
     if (node->mesh)
     {
         for (size_t i = 0; i < (node->mesh->primitives_count); i++)
         {
-            Log::InfoDebug("[CGLTF] parentTransform Matrix: {}", localTransform.Matrix);
+            //Log::InfoDebug("[CGLTF] parentTransform Matrix: {}", localTransform.Matrix);
             /*Log::InfoDebug("[CGLTF] parentTransform Position: {}", localTransform.Position);
             Log::InfoDebug("[CGLTF] parentTransform Rotation: {}", localTransform.Rotation);
             Log::InfoDebug("[CGLTF] parentTransform Scale: {}", localTransform.Scale);*/
@@ -202,9 +203,11 @@ void Spar::Model::ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data 
 
     HRESULT hr = E_FAIL;
 
-    // map texture types to their respective textures (now using cgltf_texture_view*)
-    std::unordered_map<TextureType, cgltf_texture_view *> textureMap;
-    std::unordered_set<std::string> loadedTextures; // To track loaded textures
+    // map texture types to their respective textures
+    std::unordered_map<TextureType, cgltf_texture_view *> textureMap;   
+
+    //the following code for materials is very much unoptimised. It should only look for materials once, make a texture, sampler and save it in a map, not per primitive
+    //#TODO
 
     if (material->has_pbr_metallic_roughness)
     {
@@ -220,7 +223,6 @@ void Spar::Model::ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data 
         // Map normal texture
         textureMap[TextureType::NORMAL] = &material->normal_texture;
     }
-
     if (material->emissive_texture.texture)
     {
         // Map emissive texture
@@ -306,7 +308,7 @@ HRESULT Spar::Model::LoadMaterialTexture(Material &mat, cgltf_texture_view *text
             mat.AOPath = path;
             return S_OK;
         default:
-            Log::Warn("[Teexture] Unknown texture type.");
+            Log::Warn("[Texture] Unknown texture type.");
             return E_FAIL;
         }
     }

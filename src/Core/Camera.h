@@ -30,6 +30,11 @@ namespace Spar
 		inline const SM::Matrix& GetProjectionMatrix() const { return m_proj; }
 		inline const SM::Matrix& GetOrthoMatrix() const { return m_ortho; }
 
+		float GetYaw() const { return m_yaw; }
+		float GetPitch() const { return m_pitch; }
+		void SetYaw(float yaw) { m_yaw = yaw; }
+		void SetPitch(float pitch) { m_pitch = pitch; }
+
 		void SetPosition(const SM::Vector3& position);
 		void SetAngle(const f32 angle);
 		void SetNearPlane(const f32 nearPlane);
@@ -50,5 +55,7 @@ namespace Spar
 		SM::Matrix  m_view;
 		SM::Matrix  m_proj;
 		SM::Matrix  m_ortho;
+		float m_yaw = 0.0f;
+		float m_pitch = 0.0f;
 	};
 }

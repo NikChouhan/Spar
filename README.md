@@ -20,7 +20,7 @@ xmake run
 - [x] Diffuse Maps
 - [ ] Emmision and specular maps
 - [x] Materials
-- [] Lights 
+- [ ] Lights 
     - [ ] Point lights
     - [ ] Directional Lights
     - [ ] Spotlights

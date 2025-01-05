@@ -28,7 +28,7 @@ float4 PSMain(PS_INPUT input) : SV_Target
     float4 texColor = albedoTexture.Sample(samplerState, input.Tex);
     
     // Basic lighting direction (can be moved to constant buffer)
-    float3 lightDir = normalize(float3(1.0f, 1.0f, -1.0f));
+    float3 lightDir = normalize(input.Pos);
     
     // Calculate diffuse lighting
     float diffuseIntensity = max(dot(normal, lightDir), 0.0f);

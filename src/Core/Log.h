@@ -6,6 +6,8 @@
 #include <sstream>
 #include <SimpleMath.h>
 
+namespace SM = DirectX::SimpleMath;
+
 namespace Spar
 {
     class Log
@@ -52,6 +54,8 @@ namespace Spar
 
         static std::string FormatLogs(const std::string& msg, const DirectX::XMMATRIX& matrix);
         static std::string FormatLogs(const std::string& msg, const DirectX::XMVECTOR& vector);
+        static std::string FormatLogs(const std::string& msg, const SM::Vector3& vector);
+
 
         static std::vector<LogMessageData> m_messages;
         static bool m_initialized;
