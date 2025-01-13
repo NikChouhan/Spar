@@ -197,76 +197,101 @@ void Spar::Model::ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data 
 
     // material
 
-    cgltf_material *material = primitive->material;
-    Material mat = {};
-    prim.materialIndex = material - data->materials;
+    cgltf_material *material = primitive->material; //remember this is pointing towards the material pointer. In gltf as long as the material remains the same, the pointer is the same even for diff primitives
 
-    HRESULT hr = E_FAIL;
-
-    // map texture types to their respective textures
-    std::unordered_map<TextureType, cgltf_texture_view *> textureMap;   
-
-    //the following code for materials is very much unoptimised. It should only look for materials once, make a texture, sampler and save it in a map, not per primitive
-    //#TODO
-
-    if (material->has_pbr_metallic_roughness)
+    if (materialLookup.find(material) == materialLookup.end())
     {
-        cgltf_pbr_metallic_roughness *pbr = &material->pbr_metallic_roughness;
-        // Map base color texture (albedo)
-        textureMap[TextureType::ALBEDO] = &pbr->base_color_texture;
-        // Map metallic-roughness texture
-        textureMap[TextureType::METALLIC_ROUGHNESS] = &pbr->metallic_roughness_texture;
-    }
+        Material mat = {};
 
-    if (material->normal_texture.texture)
-    {
-        // Map normal texture
-        textureMap[TextureType::NORMAL] = &material->normal_texture;
-    }
-    if (material->emissive_texture.texture)
-    {
-        // Map emissive texture
-        textureMap[TextureType::EMISSIVE] = &material->emissive_texture;
-    }
+        HRESULT hr = E_FAIL;
 
-    if (material->occlusion_texture.texture)
-    {
-        // Map occlusion texture
-        textureMap[TextureType::AO] = &material->occlusion_texture;
-    }
+        // map texture types to their respective textures
+        std::unordered_map<TextureType, cgltf_texture_view*> textureMap;
 
-    // Load all textures from the map if they haven't been loaded before
-    for (const auto &pair : textureMap)
-    {
-        std::string textureIdentifier = std::to_string(static_cast<int>(pair.first)); // Unique identifier for texture type
+        //the following code for materials is very much unoptimised. It should only look for materials once, make a texture, sampler and save it in a map, not per primitive
+        //#TODO
 
-        if (loadedTextures.find(textureIdentifier) == loadedTextures.end()) // If not already loaded
+        if (material->has_pbr_metallic_roughness)
         {
-            hr = LoadMaterialTexture(mat, pair.second, pair.first);
-            if (FAILED(hr))
+            cgltf_pbr_metallic_roughness* pbr = &material->pbr_metallic_roughness;
+            // Map base color texture (albedo)
+            if (pbr->base_color_texture.texture)
             {
-                Log::Error("[Texture] Failed to load texture of type " + textureIdentifier);
+                textureMap[TextureType::ALBEDO] = &pbr->base_color_texture;
+            }
+            if (pbr->metallic_roughness_texture.texture)
+            {
+                // Map metallic-roughness texture
+                textureMap[TextureType::METALLIC_ROUGHNESS] = &pbr->metallic_roughness_texture;
+                //mat.MaterialName = 
+            }
+        }
+
+        if (material->normal_texture.texture)
+        {
+            // Map normal texture
+            textureMap[TextureType::NORMAL] = &material->normal_texture;
+        }
+        if (material->emissive_texture.texture)
+        {
+            // Map emissive texture
+            textureMap[TextureType::EMISSIVE] = &material->emissive_texture;
+        }
+
+        if (material->occlusion_texture.texture)
+        {
+            // Map occlusion texture
+            textureMap[TextureType::AO] = &material->occlusion_texture;
+        }
+        if (material->has_pbr_specular_glossiness)
+        {
+            cgltf_pbr_specular_glossiness* pbr = &material->pbr_specular_glossiness;
+            if (pbr->specular_glossiness_texture.texture)
+            {
+                //textureMap[TextureType::SPECULAR_GLOSSINESS] = &material->tex
+            }
+        }
+
+        // Load all textures from the map if they haven't been loaded before
+        for (const auto& pair : textureMap)
+        {
+            static int i = 0;
+            std::string textureIdentifier = std::to_string(static_cast<int>(pair.first)); // Unique identifier for texture type
+            std::string imageName = pair.second->texture->image->uri;
+            std::string pathTexture = imageName;
+
+            if (loadedTextures.find(pathTexture) == loadedTextures.end()) // If not already loaded
+            {
+                hr = LoadMaterialTexture(mat, pair.second, pair.first);
+                if (FAILED(hr))
+                {
+                    Log::Error("[Texture] Failed to load texture of type " + textureIdentifier + " with name: " + imageName);
+                    Log::InfoDebug("  #", i++);
+                }
+                else
+                {
+                    Log::Info("[Texture] Loaded texture of type " + textureIdentifier + " with name: " + imageName);
+                    Log::InfoDebug("  #", i++);
+                    loadedTextures.insert(imageName); // Mark this texture type as loaded
+                }
             }
             else
             {
-                Log::Info("[Texture] Loaded texture of type " + textureIdentifier);
-                loadedTextures.insert(textureIdentifier); // Mark this texture type as loaded
+                Log::Info("[Texture] Skipping already loaded texture of type "+ textureIdentifier + " with name: " + imageName);
             }
         }
-        else
-        {
-            Log::Info("[Texture] Skipping already loaded texture of type " + textureIdentifier);
-        }
+        m_materials.push_back(mat);
+        materialLookup[material] = m_materials.size() - 1;
+        prim.materialIndex = materialLookup[material];
     }
 
+    prim.materialIndex = materialLookup[material];
     prim.transform = parentTransform;
     prim.startIndex = indexOffset;
     prim.startVertex = vertexOffset;
     prim.vertexCount = vertexCount;
     prim.indexCount = indexCount;
 
-    // prim.materialIndex = m_materials.size();
-    m_materials.push_back(mat);
     m_primitives.push_back(prim);
 }
 
@@ -398,38 +423,35 @@ void Spar::Model::SetBuffers()
     indices.clear();*/
 }
 
-bool Spar::Model::SetTexResources()
+bool Spar::Model::SetTexResources(uint32_t materialIndex)
 {
-    renderer->m_context->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
     renderer->m_context->PSSetConstantBuffers(0, 1, m_materialBuffer.GetAddressOf());
     renderer->m_context->PSSetShader(renderer->m_pixelShader.Get(), nullptr, 0);
 
     renderer->m_context->PSSetSamplers(0, 1, m_samplerState.GetAddressOf());
 
-    for (auto &mat : m_materials)
-    {
-        if (mat.HasAlbedo)
-        {
-            renderer->m_context->PSSetShaderResources(static_cast<UINT>(TextureType::ALBEDO), 1, mat.AlbedoView.GetAddressOf());
-        }
-        if (mat.HasNormal)
-        {
-            renderer->m_context->PSSetShaderResources(static_cast<UINT>(TextureType::NORMAL), 1, mat.NormalView.GetAddressOf());
-        }
-        if (mat.HasMetallicRoughness)
-        {
-            renderer->m_context->PSSetShaderResources(static_cast<UINT>(TextureType::METALLIC_ROUGHNESS), 1, mat.MetallicRoughnessView.GetAddressOf());
-        }
-        if (mat.HasEmissive)
-        {
-            renderer->m_context->PSSetShaderResources(static_cast<UINT>(TextureType::EMISSIVE), 1, mat.EmissiveView.GetAddressOf());
-        }
-        if (mat.HasAO)
-        {
-            renderer->m_context->PSSetShaderResources(static_cast<UINT>(TextureType::AO), 1, mat.AOView.GetAddressOf());
-        }
-    }
+    Material& mat = m_materials[materialIndex];
 
+    if (mat.HasAlbedo)
+    {
+        renderer->m_context->PSSetShaderResources(static_cast<UINT>(TextureType::ALBEDO), 1, mat.AlbedoView.GetAddressOf());
+    }
+    /*if (mat.HasNormal)
+    {
+        renderer->m_context->PSSetShaderResources(static_cast<UINT>(TextureType::NORMAL), 1, mat.NormalView.GetAddressOf());
+    }
+    if (mat.HasMetallicRoughness)
+    {
+        renderer->m_context->PSSetShaderResources(static_cast<UINT>(TextureType::METALLIC_ROUGHNESS), 1, mat.MetallicRoughnessView.GetAddressOf());
+    }
+    if (mat.HasEmissive)
+    {
+        renderer->m_context->PSSetShaderResources(static_cast<UINT>(TextureType::EMISSIVE), 1, mat.EmissiveView.GetAddressOf());
+    }
+    if (mat.HasAO)
+    {
+        renderer->m_context->PSSetShaderResources(static_cast<UINT>(TextureType::AO), 1, mat.AOView.GetAddressOf());
+    }*/
     return true;
 }
 
@@ -459,7 +481,7 @@ void Spar::Model::UpdateCB(Primitive prim, DirectX::XMMATRIX worldMatrix, std::s
     }
  
     {
-        MaterialConstants matColor;
+        MaterialConstants matColor{};
         for (auto& mat : m_materials)
         {
             mat.FlatColor = { 1.0f, 1.0f, 1.0f };
@@ -496,19 +518,23 @@ void Spar::Model::Render()
     for (const auto& prim : m_primitives)
     {
         // Set material textures
-        const Material& mat = m_materials[prim.materialIndex];
-        renderer->m_context->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
+        bool val = SetTexResources(prim.materialIndex);
 
-        DirectX::XMMATRIX worldMatrix = prim.transform.Matrix;
+        if (val)
+        {
+            renderer->m_context->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
 
-        UpdateCB(prim, worldMatrix, camera);
+            DirectX::XMMATRIX worldMatrix = prim.transform.Matrix;
 
-        // Draw primitive
-        renderer->m_context->DrawIndexed(prim.indexCount, prim.startIndex, prim.startVertex);
+            UpdateCB(prim, worldMatrix, camera);
+
+            // Draw primitive
+            renderer->m_context->DrawIndexed(prim.indexCount, prim.startIndex, prim.startVertex);
+        }
     }
 }
 
-void Spar::Model::ValidateResources()
+void Spar::Model::ValidateResources() const
 {
     Log::Info("[CGLTF] Validating Model Resources:");
     Log::Info("[CGLTF] Vertices: " + std::to_string(m_vertices.size()));

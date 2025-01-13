@@ -1,6 +1,4 @@
 Texture2D albedoTexture : register(t0);
-Texture2D normalTexture : register(t1);
-Texture2D metallicRoughnessTexture : register(t2);
 
 SamplerState samplerState : register(s0);
 
@@ -28,10 +26,10 @@ float4 PSMain(PS_INPUT input) : SV_Target
     float4 texColor = albedoTexture.Sample(samplerState, input.Tex);
     
     // Basic lighting direction (can be moved to constant buffer)
-    float3 lightDir = normalize(input.Pos);
+    float3 lightDir = normalize(float3(1.0f, 1.0f, -1.0f));
     
     // Calculate diffuse lighting
-    float diffuseIntensity = max(dot(normal, lightDir), 0.0f);
+    float diffuseIntensity = max(dot(normal.xyz, lightDir), 0.0f);
     
     // Combine ambient and diffuse lighting with texture color
     float4 finalColor = texColor * (ambientColor + diffuseColor * diffuseIntensity);

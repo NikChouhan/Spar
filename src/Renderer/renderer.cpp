@@ -37,12 +37,6 @@ void Spar::Renderer::Submit(Model& model)
 
 	// error checking for setting the texresources
 
-	if(!model.SetTexResources())
-	{
-		Log::Error("Failed to set texture resources");
-		return;
-	}
-
 	model.Render();	
 
 }
@@ -59,7 +53,7 @@ void Spar::Renderer::Clear()
 
 void Spar::Renderer::Present() const
 {
-	m_SwapChain->Present(1, 0);
+	m_SwapChain->Present(0, 0);
 }
 
 

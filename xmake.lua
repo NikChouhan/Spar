@@ -30,15 +30,6 @@ add_requires("cgltf",
     }
 })
 
-add_requires("fastgltf",
-{
-    debug =	is_mode("debug"),
-    configs =
-    {
-        shared = false,
-        runtimes = "MTd",
-    }
-})
 
 add_requires("directxtk")
 

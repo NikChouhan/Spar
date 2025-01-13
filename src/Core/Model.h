@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <unordered_set>
+#include <unordered_map>
 
 #include <cgltf.h>
 
@@ -21,7 +22,15 @@ enum class TextureType
     NORMAL,
     METALLIC_ROUGHNESS,
     EMISSIVE,
-    AO
+    AO,
+    SPECULAR,
+    DISPLACEMENT,
+    OPACITY,
+    GLOSSINESS,
+    HEIGHT,
+    CUBEMAP,
+    BRDF_LUT,
+    SPECULAR_GLOSSINESS
 };
 
 struct Transformation
@@ -100,7 +109,7 @@ namespace Spar
         ~Model();
         void LoadModel(std::shared_ptr<Spar::Renderer> renderer, std::shared_ptr<Camera> camera, std::string path);
         void SetBuffers();
-        bool SetTexResources();
+        bool SetTexResources(uint32_t materialIndex);
         void UpdateCB(Primitive prim, DirectX::XMMATRIX worldMatrix, std::shared_ptr<Camera> camera);
 
         void Render();
@@ -110,7 +119,7 @@ namespace Spar
         void ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data *data, std::vector<SimpleVertex> &vertices, std::vector<u32> &indices, Transformation& parentTransform);
 
         HRESULT LoadMaterialTexture(Material &mat, cgltf_texture_view *view, TextureType type);
-        void ValidateResources();
+        void ValidateResources() const;
 
         ConstantBuffer cb;
         MaterialConstants matColor;
@@ -141,6 +150,7 @@ namespace Spar
         wrl::ComPtr<ID3D11SamplerState> m_samplerState = nullptr;
 
         std::unordered_set<std::string> loadedTextures; // To track loaded textures
+        std::unordered_map<cgltf_material*, int> materialLookup;
 
     };
 }

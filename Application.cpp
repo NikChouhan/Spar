@@ -30,7 +30,8 @@ void Spar::Application::Init()
     Log::Init();
     m_renderer->Init();
     // camera setup
-    m_camera->InitAsPerspective(90.0f, m_renderer->m_width, m_renderer->m_height);
+    m_camera->InitAsPerspective(45.0f, m_renderer->m_width, m_renderer->m_height);
+    //m_camera->InitAsOrthographic(m_renderer->m_width, m_renderer->m_height);
     m_camera->SetPosition({0.0f, 0.0f, -6.f});
 
     SDL_SetRelativeMouseMode(SDL_TRUE);
@@ -48,6 +49,8 @@ void Spar::Application::Init()
     //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/balls/MetalRoughSpheres.gltf");
     //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/flighthelmet/FlightHelmet.gltf");
     suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/bistro/bistro.gltf");
+    //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/bistrogodot/bistrogodot.gltf");
+
 
 
     models.push_back(suzanne);
@@ -103,16 +106,9 @@ void Spar::Application::Run()
                 // Use relative motion for camera control
                 int deltaX = e.motion.xrel;
                 int deltaY = e.motion.yrel;
-                HandleMouseMovement(m_camera, deltaX, deltaY, 0.2f);
-            }
-
-            else if (e.type == SDL_KEYDOWN)
-            {
-
+                HandleMouseMovement(m_camera, deltaX, deltaY, 1.0f);
             }
         }
-
-
         // Update game state
         Update(deltaTime);
 
@@ -125,6 +121,8 @@ void Spar::Application::Update(float dt)
 {
     const Uint8* keyState = SDL_GetKeyboardState(NULL);
     HandleCameraMovement(m_camera, dt, keyState);
+
+    //Log::InfoDebug("frametime: ", dt);
 
     //suzanne.UpdateCB(m_renderer, m_camera, dt);
 }
@@ -180,7 +178,7 @@ void Spar::Application::ShutDown()
 //sightly broken
 static void HandleCameraMovement(std::shared_ptr<Spar::Camera> camera, float deltaTime, const Uint8* keyState)
 {
-    constexpr float moveSpeed = 0.05f;
+    constexpr float moveSpeed = 0.005f;
 
     SM::Vector3 forward = camera->GetLookAtTarget();
     forward.Normalize();
@@ -188,7 +186,7 @@ static void HandleCameraMovement(std::shared_ptr<Spar::Camera> camera, float del
     SM::Vector3 right = SM::Vector3::Up.Cross(forward);
     right.Normalize();
 
-    SM::Vector3 up = forward.Cross(right);
+    SM::Vector3 up = SM::Vector3::Up;  
     up.Normalize();
 
     // Calculate movement in local space
@@ -220,13 +218,14 @@ void HandleMouseMovement(std::shared_ptr<Spar::Camera> camera, float deltaX, flo
     // make sure that when pitch is out of bounds, screen doesn't get flipped
     if (constrainPitch)
     {
-        if (pitch > 89.0f)
+        if (pitch > 80.0f)
             pitch = 89.0f;
         if (pitch < -89.0f)
             pitch = -89.0f;
     }
 
-    camera->Rotate(SM::Vector3::Up, DirectX::XMConvertToRadians(yaw));
+    SM::Vector3 up = (fabs(pitch) > 89.0f || fabs(pitch) < -89.0f) ? SM::Vector3::Forward : SM::Vector3::Up;
+    camera->Rotate(up, DirectX::XMConvertToRadians(yaw));
 
     // Pitch (rotation around the camera's right vector, assuming local axes)
     SM::Vector3 lookAtTarget = camera->GetLookAtTarget();
