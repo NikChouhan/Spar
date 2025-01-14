@@ -47,14 +47,13 @@ void Spar::Application::Init()
     shader.ProcessShaders(m_renderer, vsShaderPath, psshaderPath);
     // Load model
     //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/Cube/cube.glTF");
-    suzanne.LoadModel(m_renderer, m_camera,"../../../../assets/models/sponza/Sponza.glTF");
+    //suzanne.LoadModel(m_renderer, m_camera,"../../../../assets/models/sponza/Sponza.glTF");
     //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/scifi/SciFiHelmet.gltf");
     //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/suzanne/Suzanne.gltf");
     //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/balls/MetalRoughSpheres.gltf");
     //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/flighthelmet/FlightHelmet.gltf");
-    //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/bistro/bistro.gltf");
+    suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/bistro/bistro.gltf");
     //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/bistrogodot/bistrogodot.gltf");
-
 
 
     models.push_back(suzanne);
@@ -91,11 +90,7 @@ void Spar::Application::Run()
     bool quit = false;
     SDL_Event e;
 
-    // Calculate delta time
     static float lastFrame = 0.0f;
-    float currentFrame = SDL_GetTicks() / 1000.0f;
-    float deltaTime = currentFrame - lastFrame;
-    lastFrame = currentFrame;
 
     while (!quit)
     {
@@ -110,6 +105,7 @@ void Spar::Application::Run()
             }
 
             ImGui_ImplSDL2_ProcessEvent(&e);
+
             if (e.type == SDL_QUIT)
                 quit = true;
             else if (e.type == SDL_MOUSEMOTION)
@@ -117,39 +113,35 @@ void Spar::Application::Run()
                 // Use relative motion for camera control
                 int deltaX = e.motion.xrel;
                 int deltaY = e.motion.yrel;
-                HandleMouseMovement(m_camera, deltaX, deltaY, 0.7f);
+                HandleMouseMovement(m_camera, deltaX, deltaY, 0.5f);
             }
         }
-        // Update game state
-        Update(deltaTime);
 
-        // Render frame
-        Render();
+        // Calculate delta time
+        float currentFrame = SDL_GetTicks() / 1000.0f;
+        float deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
+        // Update game state and render
+        Render(deltaTime);
     }
 }
 
-void Spar::Application::Update(float dt)
+
+void Spar::Application::Render(float dt)
 {
     const Uint8* keyState = SDL_GetKeyboardState(NULL);
     HandleCameraMovement(m_camera, dt, keyState);
 
-    //Log::InfoDebug("frametime: ", dt);
-
-    //suzanne.UpdateCB(m_renderer, m_camera, dt);
-}
-
-void Spar::Application::Render()
-{
     m_renderer->Clear();
-
-
-    for (auto &model : models)
+    for (auto& model : models)
     {
         m_renderer->Submit(model);
     }
-    EditorMenu();
 
+    EditorMenu(dt);
     m_renderer->Present();
+
 
 }
 
@@ -164,15 +156,32 @@ void Spar::Application::ShutDown()
     ImGui::DestroyContext();
 }
 
-void Spar::Application::EditorMenu()
+void Spar::Application::EditorMenu(float dt)
 {
     // Start the Dear ImGui frame
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
-    // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-    ImGui::ShowDemoWindow();
+    ImGui::Begin("Stats");
+    static float constTime = 0.0f;
+    static float time = 0.0f;
+    static int count = 0;
+    time += dt;
+    count++;
+
+    if (time >= 2)
+    {
+        constTime = time/count;
+        count = 0;
+        time = 0.0f;
+    }
+    ImGui::Text("FrameTime: %0.4f", constTime);
+    ImGui::Text("FPS: %0.2f", 1 / constTime);
+
+    ImGui::End();
+
+    //ImGui::Begin("")
 
     ImGui::Render();
 
@@ -188,7 +197,7 @@ void Spar::Application::EditorMenu()
 
 static void HandleCameraMovement(std::shared_ptr<Spar::Camera> camera, float deltaTime, const Uint8* keyState)
 {
-    constexpr float moveSpeed = 0.005f;
+    constexpr float moveSpeed = 1.0f;
 
     SM::Vector3 forward = camera->GetLookAtTarget();
     forward.Normalize();

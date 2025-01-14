@@ -26,11 +26,10 @@ namespace Spar
 
 		void Init();
 		void Run();
-		void Update(float dt);
+		void Render(float dt);
 		void Resize();
-		void Render();
 		void ShutDown();
-		void EditorMenu();
+		void EditorMenu(float dt);
 	public:
 		//public member variables
 
