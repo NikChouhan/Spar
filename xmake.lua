@@ -19,7 +19,12 @@ add_requires("libsdl",
     }
 })
 
--- add_requires("imgui", { configs = { dx11 = true, sdl2 = true }})
+add_requires("imgui docking", 
+{
+    configs = { dx11 = true, sdl2 = true,  }
+})
+
+
 add_requires("cgltf",
 {
     debug =	is_mode("debug"),

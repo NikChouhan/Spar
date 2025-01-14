@@ -87,6 +87,18 @@ void Spar::Model::ProcessNode(cgltf_node *node, const cgltf_data *data, std::vec
     {
         localTransform.Matrix *= DirectX::XMMatrixTranslation(node->translation[0], node->translation[1], node->translation[2]);
     }
+        
+    //if (node->camera)
+    //{
+    //    const cgltf_camera_perspective& perspective = node->camera->data.perspective;
+
+    //    float yfov = static_cast<float>(perspective.yfov);
+    //    float aspectRatio = static_cast<float>(perspective.aspect_ratio);
+    //    float znear = static_cast<float>(perspective.znear);
+    //    float zfar = (perspective.has_zfar) ? static_cast<float>(perspective.zfar) : FLT_MAX;
+
+    //    camera->InitAsPerspective(yfov, renderer->m_width, renderer->m_width/aspectRatio, znear, zfar);    
+    //}
 
     //localTransform.Matrix = scaleMatrix * rotationMatrix * translationMatrix;
     //Log::InfoDebug("[CGLTF] parentTransform Matrix: {}", localTransform.Matrix);
@@ -455,12 +467,14 @@ bool Spar::Model::SetTexResources(uint32_t materialIndex)
     return true;
 }
 
-void Spar::Model::UpdateCB(Primitive prim, DirectX::XMMATRIX worldMatrix, std::shared_ptr<Camera> camera)
+void Spar::Model::UpdateCB(Primitive prim, std::shared_ptr<Camera> camera)
 {
     this->camera = camera;
 
     DirectX::XMMATRIX viewMatrix = camera->GetViewMatrix();
     DirectX::XMMATRIX projectionMatrix = camera->GetProjectionMatrix();
+
+    DirectX::XMMATRIX worldMatrix = prim.transform.Matrix;
 
     DirectX::XMMATRIX worldViewProjMatrix = worldMatrix * viewMatrix * projectionMatrix;
 
@@ -526,7 +540,7 @@ void Spar::Model::Render()
 
             DirectX::XMMATRIX worldMatrix = prim.transform.Matrix;
 
-            UpdateCB(prim, worldMatrix, camera);
+            UpdateCB(prim, camera);
 
             // Draw primitive
             renderer->m_context->DrawIndexed(prim.indexCount, prim.startIndex, prim.startVertex);

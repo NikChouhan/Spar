@@ -110,7 +110,7 @@ namespace Spar
         void LoadModel(std::shared_ptr<Spar::Renderer> renderer, std::shared_ptr<Camera> camera, std::string path);
         void SetBuffers();
         bool SetTexResources(uint32_t materialIndex);
-        void UpdateCB(Primitive prim, DirectX::XMMATRIX worldMatrix, std::shared_ptr<Camera> camera);
+        void UpdateCB(Primitive prim, std::shared_ptr<Camera> camera);
 
         void Render();
 

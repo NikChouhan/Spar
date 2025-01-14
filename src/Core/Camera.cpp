@@ -5,7 +5,7 @@ using namespace DirectX;
 namespace Spar
 {
     Camera::Camera()
-        : m_position(0.0f, 0.0f, -1.0f)
+        : m_position(0.0f, 0.0f, 21.0f)
         , m_target(0.0f, 0.0f, 0.0f)
         , m_angle(0.0f)
         , m_width(0.0f)
