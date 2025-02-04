@@ -25,7 +25,7 @@ namespace Spar
 		void InitD3D11();
 		void InitWindow();
 		void CreateDevice();
-		void CheckMSAAQualityLevel();
+		//void CheckMSAAQualityLevel();
 		void CreateSwapChain();
 		void CreateRenderTargetView();
 		void CreateDepthStencilView();

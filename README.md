@@ -16,32 +16,27 @@ xmake run
 
 - [x] Integrate ImGui to play with shaders/lights/textures/maps implemented subsequently
 - [x] Textures
-- [ ] Normal maps
+- [x] Normal maps
 - [x] Diffuse Maps
-- [ ] Emmision and specular maps
+- [x] Emmision specular Normal maps
 - [x] Materials
-- [ ] Lights 
-    - [ ] Point lights
-    - [ ] Directional Lights
-    - [ ] Spotlights
+- [x] Lights 
 - [x] Model loading (gltf first)
-- [ ] Bling-Phong model
-- [ ] A complex scene with all features implemented as well as proper lighting
+- [x] Bling-Phong model
+- [x] A complex scene with all features implemented as well as proper lighting (partial implemented)
 -------------------------------------------------------
 
-**Milestone Checkpoint deadline by the end of the November '24**
 
 -------------------------------------------------------
-- [ ] Shadows (mapping and point shadows)
+- [x] Shadows
 - [ ] HDR
 - [ ] Bloom
 - [ ] Deferred rendering (likely new branch)
 - [ ] SSAO and other AA techniques
-- [ ] Normal and Parallax mapping
+- [ ] Parallax mapping
 - [ ] PBR + IBL pipeline
 -------------------------------------------------------
 
-**Milestone Checkpoint deadline between 2nd and and 3rd week of December '24**
 
 -------------------------------------------------------
 - [ ] Write a simple 3D game (if possible xD)

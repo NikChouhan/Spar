@@ -47,12 +47,12 @@ void Spar::Application::Init()
     shader.ProcessShaders(m_renderer, vsShaderPath, psshaderPath);
     // Load model
     //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/Cube/cube.glTF");
-    //suzanne.LoadModel(m_renderer, m_camera,"../../../../assets/models/sponza/Sponza.glTF");
+    suzanne.LoadModel(m_renderer, m_camera,"../../../../assets/models/sponza/Sponza.glTF");
     //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/scifi/SciFiHelmet.gltf");
     //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/suzanne/Suzanne.gltf");
     //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/balls/MetalRoughSpheres.gltf");
     //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/flighthelmet/FlightHelmet.gltf");
-    suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/bistro/bistro.gltf");
+    //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/bistro/bistro.gltf");
     //suzanne.LoadModel(m_renderer, m_camera, "../../../../assets/models/bistrogodot/bistrogodot.gltf");
 
 
@@ -163,6 +163,7 @@ void Spar::Application::EditorMenu(float dt)
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
+    //fps counter
     ImGui::Begin("Stats");
     static float constTime = 0.0f;
     static float time = 0.0f;
@@ -181,7 +182,7 @@ void Spar::Application::EditorMenu(float dt)
 
     ImGui::End();
 
-    //ImGui::Begin("")
+    //#TODO? might add option to load model later idk
 
     ImGui::Render();
 

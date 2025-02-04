@@ -265,16 +265,16 @@ void Spar::Model::ProcessPrimitive(cgltf_primitive *primitive, const cgltf_data 
         }
 
         // Load all textures from the map if they haven't been loaded before
-        for (const auto& pair : textureMap)
+        for (const auto& [type, view] : textureMap)
         {
             static int i = 0;
-            std::string textureIdentifier = std::to_string(static_cast<int>(pair.first)); // Unique identifier for texture type
-            std::string imageName = pair.second->texture->image->uri;
+            std::string textureIdentifier = std::to_string(static_cast<int>(type)); // Unique identifier for texture type
+            std::string imageName = view->texture->image->uri;
             std::string pathTexture = imageName;
 
             if (loadedTextures.find(pathTexture) == loadedTextures.end()) // If not already loaded
             {
-                hr = LoadMaterialTexture(mat, pair.second, pair.first);
+                hr = LoadMaterialTexture(mat, view, type);
                 if (FAILED(hr))
                 {
                     Log::Error("[Texture] Failed to load texture of type " + textureIdentifier + " with name: " + imageName);

@@ -19,10 +19,7 @@ struct PS_INPUT
 
 float4 PSMain(PS_INPUT input) : SV_Target
 {
-    // Normalize the input normal
     float3 normal = normalize(input.Normal);
-    
-    // Sample the texture
     float4 texColor = albedoTexture.Sample(samplerState, input.Tex);
     
     // Basic lighting direction (can be moved to constant buffer)
